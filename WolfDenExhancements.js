@@ -20,7 +20,7 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
-            if (data !== undefined && data.Content === "BotMsg" && data.Type === "Hidden" && data.Dictionary !== undefined) {
+            if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
                 data = args[0];
             }
@@ -29,7 +29,6 @@ var WDE = (function (exports) {
                 return;
             }
 
-            console.log(data);
             const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
             const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
             const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
@@ -62,7 +61,10 @@ var WDE = (function (exports) {
             msg = CommonStringSubstitute(msg, substitutions);
 
             // 输出
-            ChatRoomMessageRunHandlers("post", data, { LabelColor }, msg, metadata);
+            ChatRoomMessageRunHandlers("post", data, { 
+                LabelColor,
+                IsLoverOfPlayer: () => false
+             }, msg, metadata);
 
             next(args);
         }
