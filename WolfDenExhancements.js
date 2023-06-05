@@ -23,6 +23,11 @@ var WDE = (function (exports) {
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
                 data = args[0];
+                
+                if (data.Content !== undefined && data.Content.startsWith("Orgasm")) {
+                    next(args);
+                    return;
+                }
             }
             else {
                 next(args);
