@@ -77,7 +77,7 @@ var WDE = (function (exports) {
                 data.Type = botContent.Type;
                 ChatRoomMessageRunHandlers("post", data, {
                     LabelColor: botContent.LabelColor,
-                }, msg, { senderName: botContent.Nickname });
+                }, botContent.OriginMsg, { senderName: botContent.Nickname });
             }
             else {
                 next(args);
