@@ -6,7 +6,7 @@ var WDE = (function (exports) {
 
     const MOD_NAME = "WDE";
     const MOD_FULL_NAME = "Wolf Den Enhancements";
-    const MOD_VERSION = "v0.0.1";
+    const MOD_VERSION = "v0.0.2";
 
 
     const SDK = bcModSdk.registerMod({
@@ -83,6 +83,8 @@ var WDE = (function (exports) {
                 ChatRoomMessageRunHandlers("post", data, {
                     LabelColor: botContent.LabelColor,
                     Appearance: [],
+                    IsEgged: () => false,
+                    Effect: [],
                 }, botContent.OriginMsg, {
                     senderName: botContent.Nickname
                 });
