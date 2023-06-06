@@ -34,10 +34,8 @@ var WDE = (function (exports) {
                 const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
                 const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
 
-                // Make a copy of the message for the purpose of substitutions
                 let msg = String(data.Content);
 
-                // Metadata extracted from the message's dictionary
                 const { metadata, substitutions } = ChatRoomMessageRunExtractors(data, {});
                 metadata.senderName = SenderName;
                 substitutions.push(["SourceCharacter", SenderName]);
@@ -61,14 +59,11 @@ var WDE = (function (exports) {
                 // 文本替换
                 msg = CommonStringSubstitute(msg, substitutions);
 
-                // 输出
+                // 模拟假数据
                 ChatRoomMessageRunHandlers("post", data, {
                     LabelColor,
                     IsLoverOfPlayer: () => false
                 }, msg, metadata);
-
-                next(args);
-
             }// bot转义的emote和chat信息
             else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined && data.Sender !== Player.MemberNumber) {
                 let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
@@ -80,6 +75,9 @@ var WDE = (function (exports) {
 
                 data.Type = botContent.Type;
                 data.Content = botContent.OriginMsg;
+                data.Sender = botContent.Sender;
+
+                // 模拟假数据 (聊天消息有堵嘴和xx器的混淆，此处模拟的假数据发出的消息不会混淆)
                 ChatRoomMessageRunHandlers("post", data, {
                     LabelColor: botContent.LabelColor,
                     Appearance: [],
