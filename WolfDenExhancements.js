@@ -20,58 +20,69 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
+            // Activity 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
                 data = args[0];
-                
+
                 if (data.Content !== undefined && data.Content.startsWith("Orgasm")) {
                     next(args);
                     return;
                 }
+
+                const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
+                const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
+                const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
+
+                // Make a copy of the message for the purpose of substitutions
+                let msg = String(data.Content);
+
+                // Metadata extracted from the message's dictionary
+                const { metadata, substitutions } = ChatRoomMessageRunExtractors(data, {});
+                metadata.senderName = SenderName;
+                substitutions.push(["SourceCharacter", SenderName]);
+                substitutions.push(["TargetCharacter", TargetName]);
+
+                // Substitute actions and server messages for their fulltext version
+                switch (data.Type) {
+                    case "Action":
+                        msg = DialogFindPlayer(msg);
+                        break;
+
+                    case "ServerMessage":
+                        msg = DialogFindPlayer("ServerMessage" + msg);
+                        break;
+
+                    case "Activity":
+                        msg = ActivityDictionaryText(msg);
+                        break;
+                }
+
+                // 文本替换
+                msg = CommonStringSubstitute(msg, substitutions);
+
+                // 输出
+                ChatRoomMessageRunHandlers("post", data, {
+                    LabelColor,
+                    IsLoverOfPlayer: () => false
+                }, msg, metadata);
+
+                next(args);
+
+            }
+            // bot转义的emote和chat信息
+            else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined) {
+                let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent").Content;
+
+                data.Type = botContent.Type;
+                ChatRoomMessageRunHandlers("post", data, {
+                    LabelColor: botContent.LabelColor,
+                }, msg, { senderName: botContent.Nickname });
             }
             else {
                 next(args);
                 return;
             }
-
-            const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
-            const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
-            const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
-
-            // Make a copy of the message for the purpose of substitutions
-            let msg = String(data.Content);
-
-            // Metadata extracted from the message's dictionary
-            const { metadata, substitutions } = ChatRoomMessageRunExtractors(data, {});
-            metadata.senderName = SenderName;
-            substitutions.push(["SourceCharacter", SenderName]);
-            substitutions.push(["TargetCharacter", TargetName]);
-
-            // Substitute actions and server messages for their fulltext version
-            switch (data.Type) {
-                case "Action":
-                    msg = DialogFindPlayer(msg);
-                    break;
-
-                case "ServerMessage":
-                    msg = DialogFindPlayer("ServerMessage" + msg);
-                    break;
-
-                case "Activity":
-                    msg = ActivityDictionaryText(msg);
-                    break;
-            }
-
-            // 文本替换
-            msg = CommonStringSubstitute(msg, substitutions);
-
-            // 输出
-            ChatRoomMessageRunHandlers("post", data, { 
-                LabelColor,
-                IsLoverOfPlayer: () => false
-             }, msg, metadata);
-
-            next(args);
         }
     )
 
