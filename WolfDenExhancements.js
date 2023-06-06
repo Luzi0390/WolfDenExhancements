@@ -69,17 +69,24 @@ var WDE = (function (exports) {
 
                 next(args);
 
-            }
-            // bot转义的emote和chat信息
-            else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined) {
-                let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent").Content;
+            }// bot转义的emote和chat信息
+            else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined && data.Sender !== Player.MemberNumber) {
+                let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
+                if (botContent === undefined) {
+                    next(args);
+                    return;
+                }
+                botContent = botContent.Content;
 
                 data.Type = botContent.Type;
+                data.Content = botContent.OriginMsg;
                 ChatRoomMessageRunHandlers("post", data, {
                     LabelColor: botContent.LabelColor,
-                }, botContent.OriginMsg, { senderName: botContent.Nickname });
-            }
-            else {
+                    Appearance: [],
+                }, botContent.OriginMsg, {
+                    senderName: botContent.Nickname
+                });
+            } else {
                 next(args);
                 return;
             }
