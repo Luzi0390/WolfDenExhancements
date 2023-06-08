@@ -6,7 +6,7 @@ var WDE = (function (exports) {
 
     const MOD_NAME = "WDE";
     const MOD_FULL_NAME = "Wolf Den Enhancements";
-    const MOD_VERSION = "v0.0.2";
+    const MOD_VERSION = "v0.0.3";
 
 
     const SDK = bcModSdk.registerMod({
@@ -31,18 +31,22 @@ var WDE = (function (exports) {
                     return;
                 }
 
-                // 加载BOT分享的内嵌播放器链接
+
+
+                // 加载BOT分享的内嵌播放器链接（bot逻辑上未限制MusicUrl中的内容，所以也可以用来分享其他的标签，有风险）
                 if (data.Content !== undefined && data.Content == "MusicBox") {
-                    let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
+                    let botContent = data.BotContent;
                     if (botContent === undefined) {
                         next(args);
                         return;
                     }
-                    botContent = botContent.Content;
 
                     let url = botContent.MusicUrl;
                     let sender = botContent.Sender;
-                    if (url !== undefined && url != "" && sender != Player.MemberNumber) {
+
+                    // 私聊bot时会自动转播放器，所以不需要接收
+                    if (sender == Player.MemberNumber) return;
+                    if (url !== undefined && url !== "") {
                         ChatRoomSendLocal(url);
                         return;
                     }
