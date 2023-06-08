@@ -33,7 +33,7 @@ var WDE = (function (exports) {
 
 
 
-                // 加载BOT分享的内嵌播放器链接（bot逻辑上未限制MusicUrl中的内容，所以也可以用来分享其他的标签，有风险）
+                // 加载BOT分享的内嵌播放器链接
                 if (data.Content !== undefined && data.Content == "MusicBox") {
                     let botContent = data.BotContent;
                     if (botContent === undefined) {
@@ -43,11 +43,11 @@ var WDE = (function (exports) {
 
                     let url = botContent.MusicUrl;
                     let sender = botContent.Sender;
-
+                    let nickname = botContent.Nickname;
                     // 私聊bot时会自动转播放器，所以不需要接收
-                    if (sender == Player.MemberNumber) return;
+                    if (!botContent.UseId && sender == Player.MemberNumber) return;
                     if (url !== undefined && url !== "") {
-                        ChatRoomSendLocal(url);
+                        ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
                         return;
                     }
                 }
