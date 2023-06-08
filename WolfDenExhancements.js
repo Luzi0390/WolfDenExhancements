@@ -20,16 +20,35 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
-            // Activity 行为 (隐藏消息)
+            // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
                 data = args[0];
 
+                // 过滤xx行为
                 if (data.Content !== undefined && data.Content.startsWith("Orgasm")) {
                     next(args);
                     return;
                 }
 
+                // 加载BOT分享的内嵌播放器链接
+                if (data.Content !== undefined && data.Content == "MusicBox") {
+                    let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
+                    if (botContent === undefined) {
+                        next(args);
+                        return;
+                    }
+                    botContent = botContent.Content;
+
+                    let url = botContent.MusicUrl;
+                    let sender = botContent.Sender;
+                    if (url !== undefined && url != "" && sender != Player.MemberNumber) {
+                        ChatRoomSendLocal(url);
+                        return;
+                    }
+                }
+
+                // 以下为Bot转发的玩家间行为
                 const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
                 const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
                 const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
