@@ -24,7 +24,16 @@ var WDE = (function (exports) {
         ChatRoomSyncMemberLeave(data);
     }
 
+    SDK.hookFunction(
+        "ChatRoomSync",
+        0,
+        (args, next) => {
+            next(args);
 
+            // 发送WDE-Ping
+            ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" });
+        }
+    );
 
     SDK.hookFunction(
         "ChatRoomMessage",
@@ -117,7 +126,7 @@ var WDE = (function (exports) {
                     senderName: botContent.Nickname
                 });
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
-            else if (data !== undefined && data.Type == "Hidden" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
+            else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 console.log(data.Dictionary);
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
@@ -143,6 +152,12 @@ var WDE = (function (exports) {
                         break;
                     case "ChatRoomSyncArousal":
                         ChatRoomSyncArousal(data.Dictionary.Data);
+                        break;
+                    case "BotSyncCharacters":
+                        console.log(data.Dictionary);
+                        data.Dictionary.characters.forEach((_, chara) => {
+                            MemberJoin(chara);
+                        });
                         break;
                 }
             } else {
