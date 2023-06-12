@@ -24,6 +24,8 @@ var WDE = (function (exports) {
         ChatRoomSyncMemberLeave(data);
     }
 
+
+
     SDK.hookFunction(
         "ChatRoomMessage",
         1,
@@ -115,7 +117,7 @@ var WDE = (function (exports) {
                     senderName: botContent.Nickname
                 });
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
-            else if (data !== undefined && data.Type == "Hidden" && data.Content == "BotSyncCharacter" && data.Dictionary !== undefined) {
+            else if (data !== undefined && data.Type == "Hidden" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
                         MemberJoin(data.Dictionary.Data);
@@ -123,10 +125,23 @@ var WDE = (function (exports) {
                     case "MemberLeave":
                         MemberLeave(data.Dictionary.Data);
                         break;
-                    case "SyncCharacter":
-                        SyncCharacter(data.Dictionary.Data);
+                    case "ChatRoomSyncItem":
+                        ChatRoomSyncItem(data.Dictionary.Data);
                         break;
-                    case "SyncCharacterItem":
+                    case "ChatRoomMessage":
+                        ChatRoomMessage(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncSingle":
+                        ChatRoomSyncSingle(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncExpression":
+                        ChatRoomSyncExpression(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncPose":
+                        ChatRoomSyncPose(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncArousal":
+                        ChatRoomSyncArousal(data.Dictionary.Data);
                         break;
                 }
             } else {
