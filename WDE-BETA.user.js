@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Wolf Den Exhancements
+// @name         Wolf Den Exhancements-BETA
 // @namespace    WDE-Beta
 // @version      0.0.3-beta
 // @description  狼窝用
@@ -15,7 +15,7 @@
     'use strict';
 
     const script = document.createElement("script");
-    script.src = `https://luzi0390.github.io/WolfDenExhancements/main.js`;
+    script.src = `https://luzi0390.github.io/WolfDenExhancements/beta-main.js`;
     window.s = script;
     document.head.appendChild(script);
 })();
