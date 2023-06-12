@@ -40,6 +40,7 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
+            console.log(data);
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
