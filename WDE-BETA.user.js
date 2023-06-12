@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wolf Den Exhancements
-// @namespace    WDE
-// @version      0.0.3
+// @namespace    WDE-Beta
+// @version      0.0.3-beta
 // @description  狼窝用
 // @author       Luzi
 // @include      /^https:\/\/(www\.)?bondageprojects\.elementfx\.com\/R\d+\/(BondageClub|\d+)(\/((index|\d+)\.html)?)?$/
