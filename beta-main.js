@@ -127,7 +127,6 @@ var WDE = (function (exports) {
                 });
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
             else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
-                console.log(data);
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
                         MemberJoin(data.Dictionary.Data);
