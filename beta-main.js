@@ -42,6 +42,7 @@ var WDE = (function (exports) {
             let data = args[0];
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
+                return;
                 args[0] = data.Dictionary;
                 data = args[0];
 
@@ -105,6 +106,7 @@ var WDE = (function (exports) {
                 }, msg, metadata);
             } // bot转义的emote和chat信息
             else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined && data.Sender !== Player.MemberNumber) {
+                return;
                 let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
                 if (botContent === undefined) {
                     next(args);
