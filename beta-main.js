@@ -155,7 +155,7 @@ var WDE = (function (exports) {
                         break;
                     case "BotSyncCharacters":
                         console.log(data.Dictionary);
-                        data.Dictionary.characters.forEach((_, chara) => {
+                        data.Dictionary.Characters.forEach((_, chara) => {
                             MemberJoin(chara);
                         });
                         break;
