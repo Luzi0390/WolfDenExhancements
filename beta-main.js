@@ -40,7 +40,6 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
-            console.log(data);
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
@@ -128,7 +127,7 @@ var WDE = (function (exports) {
                 });
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
             else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
-                console.log(data.Dictionary);
+                console.log(data);
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
                         MemberJoin(data.Dictionary.Data);
