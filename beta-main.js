@@ -154,8 +154,7 @@ var WDE = (function (exports) {
                         ChatRoomSyncArousal(data.Dictionary.Data);
                         break;
                     case "BotSyncCharacters":
-                        console.log(data.Dictionary);
-                        data.Dictionary.Characters.forEach((_, chara) => {
+                        data.Dictionary.Characters.forEach(chara => {
                             MemberJoin(chara);
                         });
                         break;
