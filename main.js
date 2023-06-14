@@ -31,8 +31,6 @@ var WDE = (function (exports) {
                     return;
                 }
 
-
-
                 // 加载BOT分享的内嵌播放器链接
                 if (data.Content !== undefined && data.Content == "MusicBox") {
                     let botContent = data.BotContent;
@@ -114,7 +112,7 @@ var WDE = (function (exports) {
                 return;
             }
         }
-    )
+    );
 
     console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`)
 })({});

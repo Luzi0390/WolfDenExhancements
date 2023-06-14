@@ -165,7 +165,18 @@ var WDE = (function (exports) {
                 return;
             }
         }
-    )
+    );
+
+    SDK.hookFunction(
+        "ChatRoomUpdateDisplay",
+        0,
+        (args, next) => {
+            let ChatRoomCharacterBK = ChatRoomCharacter;
+            ChatRoomCharacter = [];
+            next(args);
+            ChatRoomCharacter = ChatRoomCharacterBK;
+        }
+    );
 
     console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`)
 })({});
