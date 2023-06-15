@@ -65,6 +65,7 @@ var WDE = (function (exports) {
             let roomName = data['Name'];
             CurrentRoomName = roomName;
 
+            next(args);
             // 添加到OtherRoomCharacters中
             for (let C = 0; C < data.Character.length; C++) {
                 MemberJoin({
@@ -73,9 +74,6 @@ var WDE = (function (exports) {
                     RoomName: roomName,
                 });
             }
-            console.log(OtherRoomCharacters);
-            
-            next(args);
 
             // 发送WDE-Ping，用于在bot处注册为WDE-Client
             setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping"}), 1000);
