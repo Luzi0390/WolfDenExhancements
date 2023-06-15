@@ -54,7 +54,8 @@ var WDE = (function (exports) {
         "ChatRoomSync",
         0,
         (args, next) => {
-            let roomName = args[0]['Name'];
+            let data = args[0];
+            let roomName = data['Name'];
             CurrentRoomName = roomName;
             next(args);
 
