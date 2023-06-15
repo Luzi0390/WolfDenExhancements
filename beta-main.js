@@ -23,7 +23,7 @@ var WDE = (function (exports) {
         if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
             return;
         }
-        const char = CharacterLoadOnline(data.Character[C], data.SourceMemberNumber);
+        const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
 
         let roomName = data.RoomName;
         if (OtherRoomCharacters[roomName] === undefined) {
