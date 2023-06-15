@@ -61,10 +61,9 @@ var WDE = (function (exports) {
 
             // 添加到OtherRoomCharacters中
             for (let C = 0; C < data.Character.length; C++) {
-                const sourceMemberNumber = trustedUpdate ? data.Character[C].MemberNumber : data.SourceMemberNumber;
                 MemberJoin({
                     Character: Char,
-                    SourceMemberNumber: sourceMemberNumber,
+                    SourceMemberNumber: data.Character[C].MemberNumber,
                     RoomName: roomName,
                 });
             }
