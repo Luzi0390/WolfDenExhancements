@@ -62,7 +62,7 @@ var WDE = (function (exports) {
             // 添加到OtherRoomCharacters中
             for (let C = 0; C < data.Character.length; C++) {
                 MemberJoin({
-                    Character: Char,
+                    Character: data.Character[C],
                     SourceMemberNumber: data.Character[C].MemberNumber,
                     RoomName: roomName,
                 });
