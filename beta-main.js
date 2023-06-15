@@ -18,7 +18,7 @@ var WDE = (function (exports) {
     let OtherRoomDatas = {}; // TODO...
     let CurrentRoomName = "";
 
-    // 玩家进入事件
+    // 玩家进入房间
     function MemberJoin(data) {
         if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
             return;
@@ -30,7 +30,13 @@ var WDE = (function (exports) {
             OtherRoomCharacters[roomName] = [char];
         }
         else {
-            OtherRoomCharacters[roomName].push(char);
+            let index = OtherRoomCharacters[roomName].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
+            if (index < 0) {
+                OtherRoomCharacters[roomName].push(char);
+            }
+            else {
+                OtherRoomCharacters[roomName][index] = char;
+            }
         }
         // ChatRoomSyncMemberJoin(data);
     }
@@ -46,6 +52,7 @@ var WDE = (function (exports) {
 
         // 从数组中移除
         let memberNumber = data.SourceMemberNumber;
+        ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
         OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(chara => chara.MemberNumber !== memberNumber);
         // ChatRoomSyncMemberLeave(data);
     }
@@ -57,7 +64,6 @@ var WDE = (function (exports) {
             let data = args[0];
             let roomName = data['Name'];
             CurrentRoomName = roomName;
-            next(args);
 
             // 添加到OtherRoomCharacters中
             for (let C = 0; C < data.Character.length; C++) {
@@ -67,9 +73,12 @@ var WDE = (function (exports) {
                     RoomName: roomName,
                 });
             }
+            console.log(OtherRoomCharacters);
+            
+            next(args);
 
             // 发送WDE-Ping，用于在bot处注册为WDE-Client
-            ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" });
+            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping"}), 1000);
         }
     );
 
@@ -91,7 +100,7 @@ var WDE = (function (exports) {
         0,
         (args, next) => {
             next(args);
-            DrawButton(960, 490, 40, 40, "🐺", "#66CCFF");
+            DrawButton(970, 490, 40, 40, "🐺", "#66CCFF");
         }
     );
 
@@ -100,8 +109,8 @@ var WDE = (function (exports) {
         "ChatRoomClick",
         0,
         (args, next) => {
-            if (MouseIn(960, 490, 40, 40)) {
-
+            if (MouseIn(970, 490, 40, 40)) {
+                console.log(OtherRoomCharacters);
             }
             next(args);
         }
@@ -113,6 +122,7 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
+            console.log(data);
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
@@ -168,9 +178,7 @@ var WDE = (function (exports) {
                         ChatRoomSyncArousal(data.Dictionary.Data);
                         break;
                     case "BotSyncCharacters":
-                        data.Dictionary.Characters.forEach(chara => {
-                            MemberJoin(chara);
-                        });
+                        MemberJoin(data.Dictionary);
                         break;
                 }
             } else {
