@@ -188,7 +188,7 @@ var WDE = (function (exports) {
             else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
-                        MemberJoin(data.Dictionary.Data);
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "MemberLeave":
                         MemberLeave(data.Dictionary.Data);
