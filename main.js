@@ -122,7 +122,7 @@ var WDE = (function (exports) {
         0,
         (args, next) => {
             OtherRoomCharacters = {};
-            ChatRoomCharater = [];
+            ChatRoomCharacter = [];
             next(args);
         }
     );
