@@ -84,7 +84,7 @@ var WDE = (function (exports) {
 
                 // 模拟假数据
                 ChatRoomMessageRunHandlers("post", data, {
-                    MemberNumber: SenderNumber
+                    MemberNumber: SenderNumber,
                     Nickname: SenderName,
                     LabelColor,
                     IsLoverOfPlayer: () => false
