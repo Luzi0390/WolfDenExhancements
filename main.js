@@ -6,7 +6,7 @@ var WDE = (function (exports) {
 
     const MOD_NAME = "WDE";
     const MOD_FULL_NAME = "Wolf Den Enhancements";
-    const MOD_VERSION = "v0.0.3";
+    const MOD_VERSION = "v0.0.4";
 
 
     const SDK = bcModSdk.registerMod({
@@ -15,11 +15,153 @@ var WDE = (function (exports) {
         version: MOD_VERSION
     });
 
+    let OtherRoomCharacters = {};
+    let OtherRoomDatas = {}; // TODO...
+    let CurrentRoomName = "";
+
+    // 玩家进入房间
+    function MemberJoin(data) {
+        if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
+            return;
+        }
+        const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
+
+        // 所有进入房间的玩家都要加入到ChatRoomCharacter中才可以同步数据
+        let charaIndex = ChatRoomCharacter.findIndex(c => c.MemberNumber === data.SourceMemberNumber);
+        charaIndex < 0 ? ChatRoomCharacter.push(char) : ChatRoomCharacter[charaIndex] = char;
+
+        let roomName = data.RoomName;
+        if (OtherRoomCharacters[roomName] === undefined) {
+            OtherRoomCharacters[roomName] = [char];
+        }
+        else {
+            let index = OtherRoomCharacters[roomName].findIndex(c => c.MemberNumber === data.SourceMemberNumber);
+            index < 0 ? OtherRoomCharacters[roomName].push(char) : OtherRoomCharacters[roomName][index] = char;
+        }
+
+        // ChatRoomSyncMemberJoin(data);
+    }
+
+    // 玩家离开房间
+    function MemberLeave(data) {
+        if (data === undefined || data.SourceMemberNumber === undefined || data.RoomName === undefined)
+            return;
+
+        let roomName = data.RoomName;
+        if (OtherRoomCharacters[roomName] === undefined)
+            return;
+
+        // 从数组中移除
+        let memberNumber = data.SourceMemberNumber;
+        ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
+        OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(chara => chara.MemberNumber != memberNumber);
+        // ChatRoomSyncMemberLeave(data);
+    }
+
+    SDK.hookFunction(
+        "ChatRoomSyncMemberJoin",
+        0,
+        (args, next) => {
+            next(args);
+
+            let data = args[0];
+
+            const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
+            if (OtherRoomCharacters[ChatRoomData.Name] === undefined) {
+                OtherRoomCharacters[ChatRoomData.Name] = [char];
+            }
+            else {
+                let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
+                index < 0 ? OtherRoomCharacters[ChatRoomData.Name].push(char) : OtherRoomCharacters[ChatRoomData.Name][index] = char;
+            }
+
+        }
+    )
+
+    SDK.hookFunction(
+        "ChatRoomSyncMemberLeave",
+        0,
+        (args, next) => {
+            next(args);
+
+            let data = args[0];
+            let memberNumber = data.SourceMemberNumber;
+            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
+            ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
+        }
+    )
+
+    // 进入房间同步
+    SDK.hookFunction(
+        "ChatRoomSync",
+        0,
+        (args, next) => {
+            let data = args[0];
+            let roomName = data['Name'];
+            CurrentRoomName = roomName;
+
+            next(args);
+            // 添加到OtherRoomCharacters中
+            for (let C = 0; C < data.Character.length; C++) {
+                MemberJoin({
+                    Character: data.Character[C],
+                    SourceMemberNumber: data.Character[C].MemberNumber,
+                    RoomName: roomName,
+                });
+            }
+
+            // 发送WDE-Ping，用于在bot处注册为WDE-Client
+            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 500);
+        }
+    );
+
+    // 修改渲染逻辑
+    SDK.hookFunction(
+        "ChatRoomUpdateDisplay",
+        0,
+        (args, next) => {
+            let ChatRoomCharacterBK = ChatRoomCharacter;
+            ChatRoomCharacter = OtherRoomCharacters[CurrentRoomName];
+            // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
+            if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
+            next(args);
+            ChatRoomCharacter = ChatRoomCharacterBK;
+        }
+    );
+
+    // 聊天室渲染时绘制切换房间按钮
+    SDK.hookFunction(
+        "ChatRoomMenuDraw",
+        0,
+        (args, next) => {
+            next(args);
+            DrawButton(970, 490, 40, 40, "🐺", "#66CCFF");
+        }
+    );
+
+    // 点击切换房间按钮逻辑
+    SDK.hookFunction(
+        "ChatRoomClick",
+        0,
+        (args, next) => {
+            if (MouseIn(970, 490, 40, 40)) {
+                let keys = Object.keys(OtherRoomCharacters);
+                let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
+                CurrentRoomName = keys[roomNameIndex];
+                console.log(CurrentRoomName, OtherRoomCharacters);
+                return;
+            }
+            next(args);
+        }
+    )
+
+    // 解析消息
     SDK.hookFunction(
         "ChatRoomMessage",
         1,
         (args, next) => {
             let data = args[0];
+            console.log(data);
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
@@ -27,7 +169,6 @@ var WDE = (function (exports) {
 
                 // 过滤xx行为
                 if (data.Content !== undefined && data.Content.startsWith("Orgasm")) {
-                    next(args);
                     return;
                 }
 
@@ -35,7 +176,6 @@ var WDE = (function (exports) {
                 if (data.Content !== undefined && data.Content == "MusicBox") {
                     let botContent = data.BotContent;
                     if (botContent === undefined) {
-                        next(args);
                         return;
                     }
 
@@ -44,73 +184,42 @@ var WDE = (function (exports) {
                     let nickname = botContent.Nickname;
                     // 私聊bot时会自动转播放器，所以不需要接收
                     if (!botContent.UseId && sender == Player.MemberNumber) return;
-                    if (url !== undefined && url !== "") {
-                        ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
-                        return;
-                    }
-                }
+                    if (url === undefined || url == "") return;
 
-                // 以下为Bot转发的玩家间行为
-                const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
-                const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
-                const SenderNumber = data.Dictionary.find(item => item.Tag === 'SourceCharacter').MemberNumber;
-                const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
-                const TargetNumber = data.Dictionary.find(item => item.Tag === 'TargetCharacter').MemberNumber;
-
-                let msg = String(data.Content);
-
-                const { metadata, substitutions } = ChatRoomMessageRunExtractors(data, {});
-                metadata.senderName = SenderName;
-                substitutions.push(["SourceCharacter", SenderName]);
-                substitutions.push(["TargetCharacter", TargetName]);
-
-                // Substitute actions and server messages for their fulltext version
-                switch (data.Type) {
-                    case "Action":
-                        msg = DialogFindPlayer(msg);
-                        break;
-
-                    case "ServerMessage":
-                        msg = DialogFindPlayer("ServerMessage" + msg);
-                        break;
-
-                    case "Activity":
-                        msg = ActivityDictionaryText(msg);
-                        break;
-                }
-
-                // 文本替换
-                msg = CommonStringSubstitute(msg, substitutions);
-
-                // 模拟假数据
-                ChatRoomMessageRunHandlers("post", data, {
-                    MemberNumber: SenderNumber,
-                    Nickname: SenderName,
-                    LabelColor,
-                    IsLoverOfPlayer: () => false
-                }, msg, metadata);
-            }// bot转义的emote和chat信息
-            else if (data !== undefined && data.Type !== undefined && data.Type == "Emote" && data.Dictionary !== undefined && data.Sender !== Player.MemberNumber) {
-                let botContent = data.Dictionary.find(item => item.Tag !== undefined && item.Tag == "BotContent");
-                if (botContent === undefined) {
-                    next(args);
+                    ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
                     return;
                 }
-                botContent = botContent.Content;
-
-                data.Type = botContent.Type;
-                data.Content = botContent.OriginMsg;
-                data.Sender = botContent.Sender;
-
-                // 模拟假数据 (聊天消息有堵嘴和xx器的混淆，此处模拟的假数据发出的消息不会混淆)
-                ChatRoomMessageRunHandlers("post", data, {
-                    LabelColor: botContent.LabelColor,
-                    Appearance: [],
-                    IsEgged: () => false,
-                    Effect: [],
-                }, botContent.OriginMsg, {
-                    senderName: botContent.Nickname
-                });
+            } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
+            else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
+                switch (data.Dictionary.Type) {
+                    case "MemberJoin":
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
+                        break;
+                    case "MemberLeave":
+                        MemberLeave(Object.assign({RoomName: data.Dictionary.RoomName}, data.Dictionary.Data));
+                        break;
+                    case "ChatRoomSyncItem":
+                        ChatRoomSyncItem(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomMessage":
+                        ChatRoomMessage(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncSingle":
+                        ChatRoomSyncSingle(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncExpression":
+                        ChatRoomSyncExpression(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncPose":
+                        ChatRoomSyncPose(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncArousal":
+                        ChatRoomSyncArousal(data.Dictionary.Data);
+                        break;
+                    case "BotSyncCharacters":
+                        MemberJoin(data.Dictionary);
+                        break;
+                }
             } else {
                 next(args);
                 return;
@@ -118,5 +227,5 @@ var WDE = (function (exports) {
         }
     );
 
-    console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`)
+    console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`);
 })({});
