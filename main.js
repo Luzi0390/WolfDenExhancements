@@ -203,6 +203,7 @@ var WDE = (function (exports) {
                     ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
                     return;
                 }
+                return;
             } // 过滤模拟的消息
             else if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined) {
                 if (data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
