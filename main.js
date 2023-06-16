@@ -86,7 +86,8 @@ var WDE = (function (exports) {
 
             let data = args[0];
             let memberNumber = data.SourceMemberNumber;
-            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
+            if (OtherRoomCharacters[ChatRoomData.Name] !== undefined)
+                OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
             ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
         }
     )
