@@ -25,19 +25,19 @@ var WDE = (function (exports) {
         }
         const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
 
+        // 所有进入房间的玩家都要加入到ChatRoomCharacter中才可以同步数据
+        let charaIndex = ChatRoomCharacter.findIndex(c => c.MemberNumber === data.SourceMemberNumber);
+        charaIndex < 0 ? ChatRoomCharacter.push(char) : ChatRoomCharacter[charaIndex] = char;
+
         let roomName = data.RoomName;
         if (OtherRoomCharacters[roomName] === undefined) {
             OtherRoomCharacters[roomName] = [char];
         }
         else {
-            let index = OtherRoomCharacters[roomName].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
-            if (index < 0) {
-                OtherRoomCharacters[roomName].push(char);
-            }
-            else {
-                OtherRoomCharacters[roomName][index] = char;
-            }
+            let index = OtherRoomCharacters[roomName].findIndex(c => c.MemberNumber === data.SourceMemberNumber);
+            index < 0 ? OtherRoomCharacters[roomName].push(char) : OtherRoomCharacters[roomName][index] = char;
         }
+
         // ChatRoomSyncMemberJoin(data);
     }
 
@@ -52,8 +52,8 @@ var WDE = (function (exports) {
 
         // 从数组中移除
         let memberNumber = data.SourceMemberNumber;
-        ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
-        OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(chara => chara.MemberNumber !== memberNumber);
+        ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
+        OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(chara => chara.MemberNumber != memberNumber);
         // ChatRoomSyncMemberLeave(data);
     }
 
@@ -65,18 +65,15 @@ var WDE = (function (exports) {
 
             let data = args[0];
 
-            let char = data.Character;
+            const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
             if (OtherRoomCharacters[ChatRoomData.Name] === undefined) {
                 OtherRoomCharacters[ChatRoomData.Name] = [char];
             }
-
-            let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
-            if (index < 0) {
-                OtherRoomCharacters[ChatRoomData.Name].push(char);
-            }
             else {
-                OtherRoomCharacters[ChatRoomData.Name][index] = char;
+                let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
+                index < 0 ? OtherRoomCharacters[ChatRoomData.Name].push(char) : OtherRoomCharacters[ChatRoomData.Name][index] = char;
             }
+
         }
     )
 
@@ -88,7 +85,8 @@ var WDE = (function (exports) {
 
             let data = args[0];
             let memberNumber = data.SourceMemberNumber;
-            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber !== memberNumber);
+            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
+            ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
         }
     )
 
@@ -112,7 +110,7 @@ var WDE = (function (exports) {
             }
 
             // 发送WDE-Ping，用于在bot处注册为WDE-Client
-            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 1000);
+            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 500);
         }
     );
 
@@ -123,6 +121,8 @@ var WDE = (function (exports) {
         (args, next) => {
             let ChatRoomCharacterBK = ChatRoomCharacter;
             ChatRoomCharacter = OtherRoomCharacters[CurrentRoomName];
+            // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
+            if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
             next(args);
             ChatRoomCharacter = ChatRoomCharacterBK;
         }
@@ -144,7 +144,11 @@ var WDE = (function (exports) {
         0,
         (args, next) => {
             if (MouseIn(970, 490, 40, 40)) {
-                console.log(OtherRoomCharacters);
+                let keys = Object.keys(OtherRoomCharacters);
+                let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
+                CurrentRoomName = keys[roomNameIndex];
+                console.log(CurrentRoomName, OtherRoomCharacters);
+                return;
             }
             next(args);
         }
@@ -191,7 +195,7 @@ var WDE = (function (exports) {
                         MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "MemberLeave":
-                        MemberLeave(data.Dictionary.Data);
+                        MemberLeave(Object.assign({RoomName: data.Dictionary.RoomName}, data.Dictionary.Data));
                         break;
                     case "ChatRoomSyncItem":
                         ChatRoomSyncItem(data.Dictionary.Data);
@@ -222,5 +226,5 @@ var WDE = (function (exports) {
         }
     );
 
-    console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`)
+    console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`);
 })({});
