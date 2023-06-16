@@ -58,6 +58,42 @@ var WDE = (function (exports) {
     }
 
     SDK.hookFunction(
+        "ChatRoomSyncMemberJoin",
+        0,
+        (args, next) => {
+            next(args);
+
+            let data = args[0];
+
+            let char = data.Character;
+            if (OtherRoomCharacters[ChatRoomData.Name] === undefined) {
+                OtherRoomCharacters[ChatRoomData.Name] = [char];
+            }
+
+            let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
+            if (index < 0) {
+                OtherRoomCharacters[ChatRoomData.Name].push(char);
+            }
+            else {
+                OtherRoomCharacters[ChatRoomData.Name][index] = char;
+            }
+        }
+    )
+
+    SDK.hookFunction(
+        "ChatRoomSyncMemberLeave",
+        0,
+        (args, next) => {
+            next(args);
+
+            let data = args[0];
+            let memberNumber = data.SourceMemberNumber;
+            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber !== memberNumber);
+        }
+    )
+
+    // 进入房间同步
+    SDK.hookFunction(
         "ChatRoomSync",
         0,
         (args, next) => {
@@ -76,7 +112,7 @@ var WDE = (function (exports) {
             }
 
             // 发送WDE-Ping，用于在bot处注册为WDE-Client
-            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping"}), 1000);
+            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 1000);
         }
     );
 
