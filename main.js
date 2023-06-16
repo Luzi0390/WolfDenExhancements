@@ -116,16 +116,13 @@ var WDE = (function (exports) {
         }
     );
 
-    // 离开时删除对应房间内角色
+    // 离开时删除全部数据
     SDK.hookFunction(
         "ChatRoomLeave",
         0,
         (args, next) => {
-            let roomName = Player.LastChatRoom;
-            OtherRoomCharacters[roomName].forEach(C => {
-                ChatRoomCharacter = ChatRoomCharacter.filter(c => C.MemberNumber !== c.MemberNumber);
-            });
-            delete OtherRoomCharacters[roomName];
+            OtherRoomCharacters = {};
+            ChatRoomCharater = [];
             next(args);
         }
     );
