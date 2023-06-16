@@ -6,7 +6,7 @@ var WDE = (function (exports) {
 
     const MOD_NAME = "WDE";
     const MOD_FULL_NAME = "Wolf Den Enhancements";
-    const MOD_VERSION = "v0.0.4";
+    const MOD_VERSION = "v0.0.4.1";
 
 
     const SDK = bcModSdk.registerMod({
@@ -115,6 +115,20 @@ var WDE = (function (exports) {
         }
     );
 
+    // 离开时删除对应房间内角色
+    SDK.hookFunction(
+        "ChatRoomLeave",
+        0,
+        (args, next) => {
+            let roomName = Player.LastChatRoom;
+            OtherRoomCharacters[roomName].forEach(C => {
+                ChatRoomCharacter = ChatRoomCharacter.filter(c => C.MemberNumber !== c.MemberNumber);
+            });
+            delete OtherRoomCharacters[roomName];
+            next(args);
+        }
+    );
+
     // 修改渲染逻辑
     SDK.hookFunction(
         "ChatRoomUpdateDisplay",
@@ -185,8 +199,12 @@ var WDE = (function (exports) {
                     // 私聊bot时会自动转播放器，所以不需要接收
                     if (!botContent.UseId && sender == Player.MemberNumber) return;
                     if (url === undefined || url == "") return;
-
                     ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
+                    return;
+                }
+            } // 过滤模拟的消息
+            else if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined) {
+                if (data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
                     return;
                 }
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
@@ -196,7 +214,7 @@ var WDE = (function (exports) {
                         MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "MemberLeave":
-                        MemberLeave(Object.assign({RoomName: data.Dictionary.RoomName}, data.Dictionary.Data));
+                        MemberLeave(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "ChatRoomSyncItem":
                         ChatRoomSyncItem(data.Dictionary.Data);
@@ -220,10 +238,10 @@ var WDE = (function (exports) {
                         MemberJoin(data.Dictionary);
                         break;
                 }
-            } else {
-                next(args);
                 return;
             }
+
+            next(args);
         }
     );
 
