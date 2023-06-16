@@ -53,7 +53,9 @@ var WDE = (function (exports) {
                 // 以下为Bot转发的玩家间行为
                 const LabelColor = data.Dictionary.find(item => item.LabelColor !== undefined).LabelColor;
                 const SenderName = data.Dictionary.find(item => item.Tag === 'SourceCharacter').Text;
+                const SenderNumber = data.Dictionary.find(item => item.Tag === 'SourceCharacter').MemberNumber;
                 const TargetName = data.Dictionary.find(item => item.Tag === 'TargetCharacter').Text;
+                const TargetNumber = data.Dictionary.find(item => item.Tag === 'TargetCharacter').MemberNumber;
 
                 let msg = String(data.Content);
 
@@ -82,6 +84,7 @@ var WDE = (function (exports) {
 
                 // 模拟假数据
                 ChatRoomMessageRunHandlers("post", data, {
+                    MemberNumber: SenderNumber
                     Nickname: SenderName,
                     LabelColor,
                     IsLoverOfPlayer: () => false
