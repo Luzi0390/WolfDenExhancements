@@ -85,7 +85,8 @@ var WDE = (function (exports) {
 
             let data = args[0];
             let memberNumber = data.SourceMemberNumber;
-            OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
+            if (OtherRoomCharacters[ChatRoomData.Name] !== undefined)
+                OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
             ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
         }
     )
@@ -98,6 +99,10 @@ var WDE = (function (exports) {
             let data = args[0];
             let roomName = data['Name'];
             CurrentRoomName = roomName;
+
+            // 进入时先删除数据
+            OtherRoomCharacters = {};
+            ChatRoomCharacter = [];
 
             next(args);
             // 添加到OtherRoomCharacters中
@@ -147,6 +152,7 @@ var WDE = (function (exports) {
                 let keys = Object.keys(OtherRoomCharacters);
                 let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                 CurrentRoomName = keys[roomNameIndex];
+                ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 3000)
                 console.log(CurrentRoomName, OtherRoomCharacters);
                 return;
             }
@@ -160,7 +166,6 @@ var WDE = (function (exports) {
         1,
         (args, next) => {
             let data = args[0];
-            console.log(data);
             // 行为 (隐藏消息)
             if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
@@ -184,8 +189,13 @@ var WDE = (function (exports) {
                     // 私聊bot时会自动转播放器，所以不需要接收
                     if (!botContent.UseId && sender == Player.MemberNumber) return;
                     if (url === undefined || url == "") return;
-
                     ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
+                    return;
+                }
+                return;
+            } // 过滤模拟的消息
+            else if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined) {
+                if (data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
                     return;
                 }
             } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
@@ -195,7 +205,7 @@ var WDE = (function (exports) {
                         MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "MemberLeave":
-                        MemberLeave(Object.assign({RoomName: data.Dictionary.RoomName}, data.Dictionary.Data));
+                        MemberLeave(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                     case "ChatRoomSyncItem":
                         ChatRoomSyncItem(data.Dictionary.Data);
@@ -216,13 +226,13 @@ var WDE = (function (exports) {
                         ChatRoomSyncArousal(data.Dictionary.Data);
                         break;
                     case "BotSyncCharacters":
-                        MemberJoin(data.Dictionary);
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.Roomname }, data.Dictionary));
                         break;
                 }
-            } else {
-                next(args);
                 return;
             }
+
+            next(args);
         }
     );
 

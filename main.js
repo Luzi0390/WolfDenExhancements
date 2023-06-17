@@ -119,7 +119,7 @@ var WDE = (function (exports) {
             setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 500);
         }
     );
-    
+
     // 修改渲染逻辑
     SDK.hookFunction(
         "ChatRoomUpdateDisplay",
