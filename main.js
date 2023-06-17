@@ -101,6 +101,10 @@ var WDE = (function (exports) {
             let roomName = data['Name'];
             CurrentRoomName = roomName;
 
+            // 进入时先删除数据
+            OtherRoomCharacters = {};
+            ChatRoomCharacter = [];
+
             next(args);
             // 添加到OtherRoomCharacters中
             for (let C = 0; C < data.Character.length; C++) {
@@ -115,18 +119,7 @@ var WDE = (function (exports) {
             setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 500);
         }
     );
-
-    // 离开时删除全部数据
-    SDK.hookFunction(
-        "ChatRoomLeave",
-        0,
-        (args, next) => {
-            OtherRoomCharacters = {};
-            ChatRoomCharacter = [];
-            next(args);
-        }
-    );
-
+    
     // 修改渲染逻辑
     SDK.hookFunction(
         "ChatRoomUpdateDisplay",
