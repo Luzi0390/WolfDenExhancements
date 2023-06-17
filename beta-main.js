@@ -6,7 +6,7 @@ var WDE = (function (exports) {
 
     const MOD_NAME = "WDE";
     const MOD_FULL_NAME = "Wolf Den Enhancements";
-    const MOD_VERSION = "v0.0.3-beta";
+    const MOD_VERSION = "v0.0.4-beta";
 
     const SDK = bcModSdk.registerMod({
         name: MOD_NAME,
@@ -152,7 +152,7 @@ var WDE = (function (exports) {
                 let keys = Object.keys(OtherRoomCharacters);
                 let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                 CurrentRoomName = keys[roomNameIndex];
-                ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 3000)
+                ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
                 console.log(CurrentRoomName, OtherRoomCharacters);
                 return;
             }
@@ -226,7 +226,7 @@ var WDE = (function (exports) {
                         ChatRoomSyncArousal(data.Dictionary.Data);
                         break;
                     case "BotSyncCharacters":
-                        MemberJoin(Object.assign({ RoomName: data.Dictionary.Roomname }, data.Dictionary));
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
                         break;
                 }
                 return;
