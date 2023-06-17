@@ -198,7 +198,12 @@ var WDE = (function (exports) {
                 if (data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
                     return;
                 }
-            } // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
+            }
+            else if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
+                console.log(data);
+                ServerSend("ChatRoomChat", { Type: "Whisper", Content: "WDE-Bot-Pong", Target: data.Sender });
+            }
+            // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
             else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
