@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Wolf Den Exhancements-BETA
 // @namespace    WDE-Beta
-// @version      0.0.3-beta
+// @version      0.0.4-beta
 // @description  狼窝用
 // @author       Luzi
 // @include      /^https:\/\/(www\.)?bondageprojects\.elementfx\.com\/R\d+\/(BondageClub|\d+)(\/((index|\d+)\.html)?)?$/
@@ -16,6 +16,5 @@
 
     const script = document.createElement("script");
     script.src = `https://luzi0390.github.io/WolfDenExhancements/beta-main.js`;
-    window.s = script;
     document.head.appendChild(script);
 })();
