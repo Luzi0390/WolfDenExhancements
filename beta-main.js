@@ -18,6 +18,8 @@ var WDE = (function (exports) {
     let OtherRoomDatas = {}; // TODO...
     let CurrentRoomName = "";
 
+    let InBotRoom = false;
+
     // 玩家进入房间
     function MemberJoin(data) {
         if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
@@ -54,7 +56,25 @@ var WDE = (function (exports) {
         let memberNumber = data.SourceMemberNumber;
         ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
         OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(chara => chara.MemberNumber != memberNumber);
+        if (OtherRoomCharacters[roomName].length <= 0) {
+            delete OtherRoomCharacters[roomName];
+            delete OtherRoomDatas[roomName];
+        }
         // ChatRoomSyncMemberLeave(data);
+    }
+
+    function SyncCharacterToOtherRoom() {
+        let rooms = Object.keys(OtherRoomCharacters);
+
+        for (let room in rooms) {
+            for (let i = 0; i < OtherRoomCharacters[room].length; i++) {
+                let otherChara = OtherRoomCharacters[room][i];
+                let index = ChatRoomCharacter.findIndex(chara => chara.MemberNumber === otherChara.MemberNumber);
+                if (index >= 0) {
+                    OtherRoomCharacters[room][i] = ChatRoomCharacter[index];
+                }
+            }
+        }
     }
 
     SDK.hookFunction(
@@ -103,6 +123,7 @@ var WDE = (function (exports) {
             // 进入时先删除数据
             OtherRoomCharacters = {};
             ChatRoomCharacter = [];
+            InBotRoom = false;
 
             next(args);
             // 添加到OtherRoomCharacters中
@@ -115,7 +136,7 @@ var WDE = (function (exports) {
             }
 
             // 发送WDE-Ping，用于在bot处注册为WDE-Client
-            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Join-Ping" }), 500);
+            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Client-Ping" }), 500);
         }
     );
 
@@ -139,7 +160,14 @@ var WDE = (function (exports) {
         0,
         (args, next) => {
             next(args);
-            DrawButton(970, 490, 40, 40, "🐺", "#66CCFF");
+            if (InBotRoom) {
+                if (Object.keys(OtherRoomCharacters).length > 1) {
+                    DrawButton(970, 490, 40, 40, "🐺", "#66CCFF");
+                }
+                else {
+                    DrawButton(970, 490, 40, 40, "🐺", "#888")
+                }
+            }
         }
     );
 
@@ -148,7 +176,7 @@ var WDE = (function (exports) {
         "ChatRoomClick",
         0,
         (args, next) => {
-            if (MouseIn(970, 490, 40, 40)) {
+            if (InBotRoom && Object.keys(OtherRoomCharacters).length > 1 && MouseIn(970, 490, 40, 40)) {
                 let keys = Object.keys(OtherRoomCharacters);
                 let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                 CurrentRoomName = keys[roomNameIndex];
@@ -160,6 +188,55 @@ var WDE = (function (exports) {
         }
     )
 
+    // 通过BOT消息模拟同房间内玩家的消息
+    SDK.hookFunction(
+        "ChatRoomMessage",
+        1,
+        (args, next) => {
+            let data = args[0];
+            if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
+                InBotRoom = true;
+                switch (data.Dictionary.Type) {
+                    case "MemberJoin":
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
+                        break;
+                    case "MemberLeave":
+                        MemberLeave(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
+                        break;
+                    case "ChatRoomSyncItem":
+                        ChatRoomSyncItem(data.Dictionary.Data);
+                        SyncCharacterToOtherRoom();
+                        break;
+                    case "ChatRoomMessage":
+                        ChatRoomMessage(data.Dictionary.Data);
+                        break;
+                    case "ChatRoomSyncSingle":
+                        ChatRoomSyncSingle(data.Dictionary.Data);
+                        SyncCharacterToOtherRoom();
+                        break;
+                    case "ChatRoomSyncExpression":
+                        ChatRoomSyncExpression(data.Dictionary.Data);
+                        SyncCharacterToOtherRoom();
+                        break;
+                    case "ChatRoomSyncPose":
+                        ChatRoomSyncPose(data.Dictionary.Data);
+                        SyncCharacterToOtherRoom();
+                        break;
+                    case "ChatRoomSyncArousal":
+                        ChatRoomSyncArousal(data.Dictionary.Data);
+                        SyncCharacterToOtherRoom();
+                        break;
+                    case "BotSyncCharacters":
+                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
+                        break;
+                }
+                return;
+            }
+
+            next(args);
+        }
+    );
+
     // 解析消息
     SDK.hookFunction(
         "ChatRoomMessage",
@@ -167,14 +244,9 @@ var WDE = (function (exports) {
         (args, next) => {
             let data = args[0];
             // 行为 (隐藏消息)
-            if (data !== undefined && data.Content == "BotMsg" && data.Type == "Hidden" && data.Dictionary !== undefined) {
+            if (data !== undefined && data.Content == "WDE-Bot-Element" && data.Type == "Hidden" && data.Dictionary !== undefined) {
                 args[0] = data.Dictionary;
                 data = args[0];
-
-                // 过滤xx行为
-                if (data.Content !== undefined && data.Content.startsWith("Orgasm")) {
-                    return;
-                }
 
                 // 加载BOT分享的内嵌播放器链接
                 if (data.Content !== undefined && data.Content == "MusicBox") {
@@ -193,47 +265,33 @@ var WDE = (function (exports) {
                     return;
                 }
                 return;
-            } // 过滤模拟的消息
-            else if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined) {
-                if (data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
-                    return;
-                }
             }
-            else if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
-                console.log(data);
+            next(args);
+        }
+    );
+
+    // 过滤由bot转发的模拟消息
+    SDK.hookFunction(
+        "ChatRoomMessage",
+        1,
+        (args, next) => {
+            let data = args[0];
+            if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined && data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
+                return;
+            }
+            next(args);
+        }
+    );
+
+    // 响应bot进入房间的ping
+    SDK.hookFunction(
+        "ChatRoomMessage",
+        1,
+        (args, next) => {
+            let data = args[0];
+            if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
+                InBotRoom = true;
                 ServerSend("ChatRoomChat", { Type: "Whisper", Content: "WDE-Bot-Pong", Target: data.Sender });
-            }
-            // 模拟玩家进入、离开 （在官方支持更多的人数后移除）
-            else if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
-                switch (data.Dictionary.Type) {
-                    case "MemberJoin":
-                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
-                        break;
-                    case "MemberLeave":
-                        MemberLeave(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
-                        break;
-                    case "ChatRoomSyncItem":
-                        ChatRoomSyncItem(data.Dictionary.Data);
-                        break;
-                    case "ChatRoomMessage":
-                        ChatRoomMessage(data.Dictionary.Data);
-                        break;
-                    case "ChatRoomSyncSingle":
-                        ChatRoomSyncSingle(data.Dictionary.Data);
-                        break;
-                    case "ChatRoomSyncExpression":
-                        ChatRoomSyncExpression(data.Dictionary.Data);
-                        break;
-                    case "ChatRoomSyncPose":
-                        ChatRoomSyncPose(data.Dictionary.Data);
-                        break;
-                    case "ChatRoomSyncArousal":
-                        ChatRoomSyncArousal(data.Dictionary.Data);
-                        break;
-                    case "BotSyncCharacters":
-                        MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
-                        break;
-                }
                 return;
             }
 
