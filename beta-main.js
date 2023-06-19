@@ -19,6 +19,7 @@ var WDE = (function (exports) {
     let CurrentRoomName = "";
 
     let InBotRoom = false;
+    let BotMemberNumber = -1;
 
     // 玩家进入房间
     function MemberJoin(data) {
@@ -41,7 +42,7 @@ var WDE = (function (exports) {
         }
 
         // ChatRoomSyncMemberJoin(data);
-    }
+    };
 
     // 玩家离开房间
     function MemberLeave(data) {
@@ -60,13 +61,18 @@ var WDE = (function (exports) {
             delete OtherRoomCharacters[roomName];
             delete OtherRoomDatas[roomName];
         }
+
+
+        if (data.SourceMemberNumber === BotMemberNumber) {
+            InBotRoom = false;
+            BotMemberNumber = -1;
+        }
         // ChatRoomSyncMemberLeave(data);
-    }
+    };
 
     function SyncCharacterToOtherRoom() {
         let rooms = Object.keys(OtherRoomCharacters);
-
-        for (let room in rooms) {
+        rooms.forEach(room => {
             for (let i = 0; i < OtherRoomCharacters[room].length; i++) {
                 let otherChara = OtherRoomCharacters[room][i];
                 let index = ChatRoomCharacter.findIndex(chara => chara.MemberNumber === otherChara.MemberNumber);
@@ -74,8 +80,8 @@ var WDE = (function (exports) {
                     OtherRoomCharacters[room][i] = ChatRoomCharacter[index];
                 }
             }
-        }
-    }
+        });
+    };
 
     SDK.hookFunction(
         "ChatRoomSyncMemberJoin",
@@ -95,7 +101,16 @@ var WDE = (function (exports) {
             }
 
         }
-    )
+    );
+
+    SDK.hookFunction(
+        "ChatRoomPublishAction",
+        0,
+        (args, next) => {
+            SyncCharacterToOtherRoom();
+            next(args);
+        }
+    );
 
     SDK.hookFunction(
         "ChatRoomSyncMemberLeave",
@@ -108,8 +123,13 @@ var WDE = (function (exports) {
             if (OtherRoomCharacters[ChatRoomData.Name] !== undefined)
                 OtherRoomCharacters[ChatRoomData.Name] = OtherRoomCharacters[ChatRoomData.Name].filter(chara => chara.MemberNumber != memberNumber);
             ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber != memberNumber);
+
+            if (data.SourceMemberNumber === BotMemberNumber) {
+                InBotRoom = false;
+                BotMemberNumber = -1;
+            }
         }
-    )
+    );
 
     // 进入房间同步
     SDK.hookFunction(
@@ -186,7 +206,7 @@ var WDE = (function (exports) {
             }
             next(args);
         }
-    )
+    );
 
     // 通过BOT消息模拟同房间内玩家的消息
     SDK.hookFunction(
@@ -196,6 +216,7 @@ var WDE = (function (exports) {
             let data = args[0];
             if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 InBotRoom = true;
+                BotMemberNumber = data.Sender;
                 switch (data.Dictionary.Type) {
                     case "MemberJoin":
                         MemberJoin(Object.assign({ RoomName: data.Dictionary.RoomName }, data.Dictionary.Data));
@@ -277,6 +298,7 @@ var WDE = (function (exports) {
         (args, next) => {
             let data = args[0];
             if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined && data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
+                BotMemberNumber = data.Sender;
                 return;
             }
             next(args);
@@ -291,6 +313,7 @@ var WDE = (function (exports) {
             let data = args[0];
             if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
                 InBotRoom = true;
+                BotMemberNumber = data.Sender;
                 ServerSend("ChatRoomChat", { Type: "Whisper", Content: "WDE-Bot-Pong", Target: data.Sender });
                 return;
             }
