@@ -15,6 +15,8 @@ var WDE = (function (exports) {
         version: MOD_VERSION
     });
 
+    const MAX_OTHER_ROOM_SIZE = 9;
+
     let OtherRoomCharacters = {};
     let OtherRoomDatas = {}; // TODO...
     let CurrentRoomName = "";
@@ -148,6 +150,26 @@ var WDE = (function (exports) {
         }
     );
 
+    // 修改渲染逻辑
+    SDK.hookFunction(
+        "ChatRoomUpdateDisplay",
+        0,
+        (args, next) => {
+            if (InBotRoom) {
+                let ChatRoomCharacterBK = ChatRoomCharacter;
+                ChatRoomCharacter = ChatRoomCharacterBK.filter(C => {
+                    return OtherRoomCharacters[CurrentRoomName].findIndex(M => M === C.MemberNumber) >= 0;
+                })
+                // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
+                if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
+                next(args);
+                ChatRoomCharacter = ChatRoomCharacterBK;
+                return;
+            }
+            next(args);
+        }
+    );
+
     // 聊天室渲染时绘制切换房间按钮
     SDK.hookFunction(
         "ChatRoomMenuDraw",
@@ -187,12 +209,11 @@ var WDE = (function (exports) {
                     let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                     CurrentRoomName = keys[roomNameIndex];
                     if (CurrentRoomName == SelfRoomName) {
-                        ChatRoomSendLocal(`<i><b><u style="color: #AA0000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
                     }
                     else {
                         ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
                     }
-                    console.log(CurrentRoomName, OtherRoomCharacters, ChatRoomCharacter);
                     return;
                 }
                 else if (MouseIn(965, 450, 40, 40)) {
@@ -206,26 +227,6 @@ var WDE = (function (exports) {
             next(args);
         }
     );
-
-    // 点击切换房间按钮逻辑
-    SDK.hookFunction(
-        "ChatRoomClick",
-        0,
-        (args, next) => {
-            if (InBotRoom && Object.keys(OtherRoomCharacters).length > 1 && MouseIn(970, 490, 40, 40)) {
-                let keys = Object.keys(OtherRoomCharacters);
-                let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
-                CurrentRoomName = keys[roomNameIndex];
-                ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
-                return;
-            }
-            if (MouseIn(970, 490, 40, 40)) {
-                ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
-                return;
-            }
-            next(args);
-        }
-    )
 
     // 通过BOT消息模拟同房间内玩家的消息
     SDK.hookFunction(

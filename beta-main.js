@@ -14,6 +14,8 @@ var WDE = (function (exports) {
         version: MOD_VERSION
     });
 
+    const MAX_OTHER_ROOM_SIZE = 9;
+
     let OtherRoomCharacters = {};
     let OtherRoomDatas = {}; // TODO...
     let CurrentRoomName = "";
@@ -208,7 +210,7 @@ var WDE = (function (exports) {
                     let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                     CurrentRoomName = keys[roomNameIndex];
                     if (CurrentRoomName == SelfRoomName) {
-                        ChatRoomSendLocal(`<i><b><u style="color: #AA0000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
                     }
                     else {
                         ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
