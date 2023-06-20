@@ -148,26 +148,6 @@ var WDE = (function (exports) {
         }
     );
 
-    // 修改渲染逻辑
-    SDK.hookFunction(
-        "ChatRoomUpdateDisplay",
-        0,
-        (args, next) => {
-            if (InBotRoom) {
-                let ChatRoomCharacterBK = ChatRoomCharacter;
-                ChatRoomCharacter = ChatRoomCharacterBK.filter(C => {
-                    return OtherRoomCharacters[CurrentRoomName].findIndex(M => M === C.MemberNumber) >= 0;
-                })
-                // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
-                if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
-                next(args);
-                ChatRoomCharacter = ChatRoomCharacterBK;
-                return;
-            }
-            next(args);
-        }
-    );
-
     // 聊天室渲染时绘制切换房间按钮
     SDK.hookFunction(
         "ChatRoomMenuDraw",
@@ -177,17 +157,48 @@ var WDE = (function (exports) {
             if (InBotRoom) {
                 if (Object.keys(OtherRoomCharacters).length > 1) {
                     if (CurrentRoomName === SelfRoomName) {
-                        DrawButton(970, 490, 40, 40, "🐺", "#66CCFF");
+                        DrawButton(965, 490, 40, 40, "🐺", "#66CCFF");
                     }
                     else {
-                        DrawButton(970, 490, 40, 40, "🐺", "#11AA11");
+                        DrawButton(965, 490, 40, 40, "🐺", "#11AA11");
                     }
-                    
                 }
                 else {
-                    DrawButton(970, 490, 40, 40, "🐺", "#888")
+                    DrawButton(965, 490, 40, 40, "🐺", "#888888")
+                }
+                if (OtherRoomCharacters[CurrentRoomName].length >= MAX_OTHER_ROOM_SIZE || CurrentRoomName == SelfRoomName) {
+                    DrawButton(965, 450, 40, 40, "✔", "#888888")
+                }
+                else {
+                    DrawButton(965, 450, 40, 40, "✔", "#66CCFF")
                 }
             }
+        }
+    );
+
+    // 点击切换房间按钮逻辑
+    SDK.hookFunction(
+        "ChatRoomClick",
+        0,
+        (args, next) => {
+            if (InBotRoom) {
+                if (MouseIn(970, 490, 40, 40)) {
+                    let keys = Object.keys(OtherRoomCharacters);
+                    let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
+                    CurrentRoomName = keys[roomNameIndex];
+                    ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
+                    console.log(CurrentRoomName, OtherRoomCharacters, ChatRoomCharacter);
+                    return;
+                }
+                else if (MouseIn(965, 450, 40, 40)) {
+                    if (OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE) {
+                        ServerSend("ChatRoomLeave", "");
+                        ServerSend("ChatRoomJoin", {Name: CurrentRoomName});
+                    }
+                    return;
+                }
+            }
+            next(args);
         }
     );
 
