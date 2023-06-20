@@ -207,7 +207,12 @@ var WDE = (function (exports) {
                     let keys = Object.keys(OtherRoomCharacters);
                     let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                     CurrentRoomName = keys[roomNameIndex];
-                    ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
+                    if (CurrentRoomName == SelfRoomName) {
+                        ChatRoomSendLocal(`<i><b><u style="color: #AA0000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                    }
+                    else {
+                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                    }
                     console.log(CurrentRoomName, OtherRoomCharacters, ChatRoomCharacter);
                     return;
                 }
