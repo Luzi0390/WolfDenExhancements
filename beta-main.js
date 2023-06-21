@@ -16,6 +16,9 @@ var WDE = (function (exports) {
 
     const MAX_OTHER_ROOM_SIZE = 9;
 
+    const SWITCH_ROOM_COOL_DOWN = 5 * 1000;
+    let SwitchEnable = true;
+
     let OtherRoomCharacters = {};
     let OtherRoomDatas = {}; // TODO...
     let CurrentRoomName = "";
@@ -62,7 +65,7 @@ var WDE = (function (exports) {
         let memberNumber = data.SourceMemberNumber;
         ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
         OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(M => M !== memberNumber);
-        
+
         if (OtherRoomCharacters[roomName].length <= 0) {
             delete OtherRoomCharacters[roomName];
             delete OtherRoomDatas[roomName];
@@ -75,7 +78,6 @@ var WDE = (function (exports) {
         (args, next) => {
             next(args);
 
-            console.log("SyncMemberJoin", OtherRoomCharacters);
             let data = args[0];
 
             const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
@@ -100,11 +102,10 @@ var WDE = (function (exports) {
                 next(args);
                 return;
             }
-            
+
             let data = args[0];
             OtherRoomCharacters[SelfRoomName] = OtherRoomCharacters[SelfRoomName].filter(M => M !== data.SourceMemberNumber);
             ChatRoomCharacter = ChatRoomCharacter.filter(C => C.MemberNumber !== data.SourceMemberNumber);
-            console.log("ChatRoomCharacter", ChatRoomCharacter.toString())
 
             // Bot离开则删除其他房间的数据且切回自己的房间
             if (data.SourceMemberNumber === BotMemberNumber) {
@@ -126,7 +127,7 @@ var WDE = (function (exports) {
         "ChatRoomSync",
         0,
         (args, next) => {
-            
+
             let data = args[0];
             SelfRoomName = data['Name'];
             CurrentRoomName = SelfRoomName;
@@ -189,11 +190,11 @@ var WDE = (function (exports) {
                 else {
                     DrawButton(965, 490, 40, 40, "🐺", "#888888")
                 }
-                if (OtherRoomCharacters[CurrentRoomName].length >= MAX_OTHER_ROOM_SIZE || CurrentRoomName == SelfRoomName) {
-                    DrawButton(965, 450, 40, 40, "✔", "#888888")
+                if (SwitchEnable && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE && CurrentRoomName != SelfRoomName) {
+                    DrawButton(965, 450, 40, 40, "✔", "#66CCFF")
                 }
                 else {
-                    DrawButton(965, 450, 40, 40, "✔", "#66CCFF")
+                    DrawButton(965, 450, 40, 40, "✔", "#888888")
                 }
             }
         }
@@ -215,13 +216,16 @@ var WDE = (function (exports) {
                     else {
                         ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
                     }
-                    console.log(CurrentRoomName, OtherRoomCharacters, ChatRoomCharacter);
                     return;
                 }
                 else if (MouseIn(965, 450, 40, 40)) {
-                    if (OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE) {
+                    if (SwitchEnable && CurrentRoomName != SelfRoomName && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE) {
+                        SwitchEnable = false;
+                        setTimeout(() => {
+                            SwitchEnable = true;
+                        }, SWITCH_ROOM_COOL_DOWN);
                         ServerSend("ChatRoomLeave", "");
-                        ServerSend("ChatRoomJoin", {Name: CurrentRoomName});
+                        ServerSend("ChatRoomJoin", { Name: CurrentRoomName });
                     }
                     return;
                 }
@@ -239,35 +243,35 @@ var WDE = (function (exports) {
             if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 InBotRoom = true;
                 BotMemberNumber = data.Sender;
-                console.log("BotChatRoom", data.Dictionary);
                 data.Dictionary.forEach(D => {
-                switch (D.Type) {
-                    case "MemberJoin":
-                    case "BotSyncCharacters":
-                        MemberJoin(Object.assign({ RoomName: D.RoomName }, D.Data));
-                        break;
-                    case "MemberLeave":
-                        MemberLeave(Object.assign({ RoomName: D.RoomName }, D.Data));
-                        break;
-                    case "ChatRoomSyncItem":
-                        ChatRoomSyncItem(D.Data);
-                        break;
-                    case "ChatRoomMessage":
-                        ChatRoomMessage(D.Data);
-                        break;
-                    case "ChatRoomSyncSingle":
-                        ChatRoomSyncSingle(D.Data);
-                        break;
-                    case "ChatRoomSyncExpression":
-                        ChatRoomSyncExpression(D.Data);
-                        break;
-                    case "ChatRoomSyncPose":
-                        ChatRoomSyncPose(D.Data);
-                        break;
-                    case "ChatRoomSyncArousal":
-                        ChatRoomSyncArousal(D.Data);
-                        break;
-                }})
+                    switch (D.Type) {
+                        case "MemberJoin":
+                        case "BotSyncCharacters":
+                            MemberJoin(Object.assign({ RoomName: D.RoomName }, D.Data));
+                            break;
+                        case "MemberLeave":
+                            MemberLeave(Object.assign({ RoomName: D.RoomName }, D.Data));
+                            break;
+                        case "ChatRoomSyncItem":
+                            ChatRoomSyncItem(D.Data);
+                            break;
+                        case "ChatRoomMessage":
+                            ChatRoomMessage(D.Data);
+                            break;
+                        case "ChatRoomSyncSingle":
+                            ChatRoomSyncSingle(D.Data);
+                            break;
+                        case "ChatRoomSyncExpression":
+                            ChatRoomSyncExpression(D.Data);
+                            break;
+                        case "ChatRoomSyncPose":
+                            ChatRoomSyncPose(D.Data);
+                            break;
+                        case "ChatRoomSyncArousal":
+                            ChatRoomSyncArousal(D.Data);
+                            break;
+                    }
+                })
                 return;
             }
 
