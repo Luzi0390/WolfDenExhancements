@@ -66,11 +66,6 @@ var WDE = (function (exports) {
         let memberNumber = data.SourceMemberNumber;
         ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
         OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(M => M !== memberNumber);
-
-        if (OtherRoomCharacters[roomName].length <= 0) {
-            delete OtherRoomCharacters[roomName];
-            delete OtherRoomDatas[roomName];
-        }
     }
 
     SDK.hookFunction(
