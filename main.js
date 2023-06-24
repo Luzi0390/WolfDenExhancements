@@ -207,10 +207,10 @@ var WDE = (function (exports) {
                     let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                     CurrentRoomName = keys[roomNameIndex];
                     if (CurrentRoomName == SelfRoomName) {
-                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
                     }
                     else {
-                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
                     }
                     return;
                 }
@@ -265,6 +265,12 @@ var WDE = (function (exports) {
                             break;
                         case "ChatRoomSyncArousal":
                             ChatRoomSyncArousal(D.Data);
+                            break;
+                        case "ChatRoomMusic":
+                            // 私聊bot时会自动转播放器，所以不需要接收
+                            if (!D.Data.UseId && D.Data.Sender == Player.MemberNumber) return;
+                            if (D.Data.MusicUrl === undefined || D.Data.MusicUrl == "") return;
+                            ChatRoomSendLocal(`<i><u><b>${D.Data.Nickname}-${D.Data.Sender}</b></u></i>： ${D.Data.MusicUrl}`);
                             break;
                     }
                 })
