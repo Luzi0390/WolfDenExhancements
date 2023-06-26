@@ -221,7 +221,8 @@ var WDE = (function (exports) {
                             SwitchEnable = true;
                         }, SWITCH_ROOM_COOL_DOWN);
                         ServerSend("ChatRoomLeave", "");
-                        ServerSend("ChatRoomJoin", { Name: CurrentRoomName });
+                        // 做个延迟加入，减少bot消息传输比bc传输慢导致数据不同步的错误
+                        setTimeout(() => ServerSend("ChatRoomJoin", { Name: CurrentRoomName }), 2000);
                     }
                     return;
                 }
