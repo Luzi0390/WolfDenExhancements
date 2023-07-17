@@ -206,10 +206,10 @@ var WDE = (function (exports) {
                     let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
                     CurrentRoomName = keys[roomNameIndex];
                     if (CurrentRoomName == SelfRoomName) {
-                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
                     }
                     else {
-                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)   
+                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
                     }
                     return;
                 }
@@ -277,7 +277,7 @@ var WDE = (function (exports) {
     // 解析消息
     SDK.hookFunction(
         "ChatRoomMessage",
-        1,
+        0,
         (args, next) => {
             let data = args[0];
             // 行为 (隐藏消息)
@@ -310,7 +310,7 @@ var WDE = (function (exports) {
     // 过滤由bot转发的模拟消息
     SDK.hookFunction(
         "ChatRoomMessage",
-        1,
+        0,
         (args, next) => {
             let data = args[0];
             if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined && data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
@@ -324,7 +324,7 @@ var WDE = (function (exports) {
     // 响应bot进入房间的ping
     SDK.hookFunction(
         "ChatRoomMessage",
-        1,
+        0,
         (args, next) => {
             let data = args[0];
             if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
