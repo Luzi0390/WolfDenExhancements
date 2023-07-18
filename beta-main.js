@@ -256,6 +256,7 @@ var WDE = (function (exports) {
                     setTimeout(() => {
                         RefreshEnable = true;
                     }, REFRESH_COOL_DOWN)
+                    return;
                 }
             }
             next(args);
