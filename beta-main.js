@@ -15,9 +15,11 @@ var WDE = (function (exports) {
     });
 
     const MAX_OTHER_ROOM_SIZE = 9;
-
     const SWITCH_ROOM_COOL_DOWN = 5 * 1000;
+    const REFRESH_COOL_DOWN = 5 * 1000;
+
     let SwitchEnable = true;
+    let RefreshEnable = true;
 
     let OtherRoomCharacters = {};
     let OtherRoomDatas = {}; // TODO...
@@ -65,6 +67,24 @@ var WDE = (function (exports) {
         let memberNumber = data.SourceMemberNumber;
         ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
         OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(M => M !== memberNumber);
+    }
+
+    // 删除房间内的角色
+    function ClearChatRoomCharacter(data) {
+        if (data === undefined || data.RoomName === undefined)
+            return;
+
+        console.log(data);
+        OtherRoomCharacters[data.RoomName] = [];
+    }
+
+    // 发送指令给Bot
+    function SendCommandToBot(command) {
+        ServerSend("ChatRoomChat", {
+            Target: BotMemberNumber,
+            Type: "Whisper",
+            Content: command
+        });
     }
 
     SDK.hookFunction(
@@ -167,7 +187,7 @@ var WDE = (function (exports) {
         }
     );
 
-    // 聊天室渲染时绘制切换房间按钮
+    // 聊天室渲染时绘制按钮
     SDK.hookFunction(
         "ChatRoomMenuDraw",
         0,
@@ -191,11 +211,17 @@ var WDE = (function (exports) {
                 else {
                     DrawButton(965, 450, 40, 40, "✔", "#888888")
                 }
+                if (RefreshEnable) {
+                    DrawButton(965, 530, 40, 40, "♻", "#66CCFF")
+                }
+                else {
+                    DrawButton(965, 530, 40, 40, "♻", "#888888")
+                }
             }
         }
     );
 
-    // 点击切换房间按钮逻辑
+    // 点击房间内按钮
     SDK.hookFunction(
         "ChatRoomClick",
         0,
@@ -224,6 +250,13 @@ var WDE = (function (exports) {
                     }
                     return;
                 }
+                else if (MouseIn(965, 530, 40, 40)) {
+                    SendCommandToBot("refresh");
+                    RefreshEnable = false;
+                    setTimeout(() => {
+                        RefreshEnable = true;
+                    }, REFRESH_COOL_DOWN)
+                }
             }
             next(args);
         }
@@ -235,6 +268,7 @@ var WDE = (function (exports) {
         0,
         (args, next) => {
             let data = args[0];
+            console.log(data);
             if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
                 InBotRoom = true;
                 BotMemberNumber = data.Sender;
@@ -265,6 +299,8 @@ var WDE = (function (exports) {
                         case "ChatRoomSyncArousal":
                             ChatRoomSyncArousal(D.Data);
                             break;
+                        case "ClearChatRoomCharacter":
+                            ClearChatRoomCharacter(D.Data);
                     }
                 })
                 return;
