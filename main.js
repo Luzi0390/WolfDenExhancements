@@ -1,3 +1,4 @@
+import EXPORTS from "./Test"
 
 var WDE = (function (exports) {
     'use strict';
@@ -8,6 +9,8 @@ var WDE = (function (exports) {
     const MOD_FULL_NAME = "Wolf Den Enhancements";
     const MOD_VERSION = "v0.0.4.5";
 
+    console.log(EXPORTS.INIT)
+
 
     const SDK = bcModSdk.registerMod({
         name: MOD_NAME,
@@ -15,366 +18,366 @@ var WDE = (function (exports) {
         version: MOD_VERSION
     });
 
-    const MAX_OTHER_ROOM_SIZE = 9;
-    const SWITCH_ROOM_COOL_DOWN = 5 * 1000;
-    const REFRESH_COOL_DOWN = 5 * 1000;
+    // const MAX_OTHER_ROOM_SIZE = 9;
+    // const SWITCH_ROOM_COOL_DOWN = 5 * 1000;
+    // const REFRESH_COOL_DOWN = 5 * 1000;
 
-    let SwitchEnable = true;
-    let RefreshEnable = true;
+    // let SwitchEnable = true;
+    // let RefreshEnable = true;
 
-    let OtherRoomCharacters = {};
-    let OtherRoomDatas = {}; // TODO...
-    let CurrentRoomName = "";
-    let SelfRoomName = "";
+    // let OtherRoomCharacters = {};
+    // let OtherRoomDatas = {}; // TODO...
+    // let CurrentRoomName = "";
+    // let SelfRoomName = "";
 
-    let InBotRoom = false;
-    let BotMemberNumber = -1;
+    // let InBotRoom = false;
+    // let BotMemberNumber = -1;
 
-    // 玩家进入房间
-    function MemberJoin(data) {
-        if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
-            return;
-        }
-        const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
+    // // 玩家进入房间
+    // function MemberJoin(data) {
+    //     if (data === undefined || data.SourceMemberNumber === undefined || data.Character === undefined || data.RoomName === undefined) {
+    //         return;
+    //     }
+    //     const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
 
-        // 所有进入房间的玩家都要加入到ChatRoomCharacter中才可以同步数据
-        let charaIndex = ChatRoomCharacter.findIndex(c => c.MemberNumber === data.SourceMemberNumber);
-        charaIndex < 0 ? ChatRoomCharacter.push(char) : ChatRoomCharacter[charaIndex] = char;
+    //     // 所有进入房间的玩家都要加入到ChatRoomCharacter中才可以同步数据
+    //     let charaIndex = ChatRoomCharacter.findIndex(c => c.MemberNumber === data.SourceMemberNumber);
+    //     charaIndex < 0 ? ChatRoomCharacter.push(char) : ChatRoomCharacter[charaIndex] = char;
 
-        let roomName = data.RoomName;
-        if (OtherRoomCharacters[roomName] === undefined) {
-            OtherRoomCharacters[roomName] = [data.SourceMemberNumber];
-        }
-        else {
-            let index = OtherRoomCharacters[roomName].findIndex(m => m === data.SourceMemberNumber);
-            if (index < 0) {
-                OtherRoomCharacters[roomName].push(data.SourceMemberNumber)
-            }
-        }
+    //     let roomName = data.RoomName;
+    //     if (OtherRoomCharacters[roomName] === undefined) {
+    //         OtherRoomCharacters[roomName] = [data.SourceMemberNumber];
+    //     }
+    //     else {
+    //         let index = OtherRoomCharacters[roomName].findIndex(m => m === data.SourceMemberNumber);
+    //         if (index < 0) {
+    //             OtherRoomCharacters[roomName].push(data.SourceMemberNumber)
+    //         }
+    //     }
 
-        // ChatRoomSyncMemberJoin(data);
-    }
+    //     // ChatRoomSyncMemberJoin(data);
+    // }
 
-    // 玩家离开房间
-    function MemberLeave(data) {
-        if (data === undefined || data.SourceMemberNumber === undefined || data.RoomName === undefined)
-            return;
+    // // 玩家离开房间
+    // function MemberLeave(data) {
+    //     if (data === undefined || data.SourceMemberNumber === undefined || data.RoomName === undefined)
+    //         return;
 
-        let roomName = data.RoomName;
-        if (OtherRoomCharacters[roomName] === undefined)
-            return;
+    //     let roomName = data.RoomName;
+    //     if (OtherRoomCharacters[roomName] === undefined)
+    //         return;
 
-        // 从数组中移除
-        let memberNumber = data.SourceMemberNumber;
-        ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
-        OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(M => M !== memberNumber);
-    }
+    //     // 从数组中移除
+    //     let memberNumber = data.SourceMemberNumber;
+    //     ChatRoomCharacter = ChatRoomCharacter.filter(chara => chara.MemberNumber !== memberNumber);
+    //     OtherRoomCharacters[roomName] = OtherRoomCharacters[roomName].filter(M => M !== memberNumber);
+    // }
 
-    // 删除房间内的角色
-    function ClearChatRoomCharacter(data) {
-        if (data === undefined || data.RoomName === undefined)
-            return;
+    // // 删除房间内的角色
+    // function ClearChatRoomCharacter(data) {
+    //     if (data === undefined || data.RoomName === undefined)
+    //         return;
 
-        console.log(data);
-        OtherRoomCharacters[data.RoomName] = [];
-    }
+    //     console.log(data);
+    //     OtherRoomCharacters[data.RoomName] = [];
+    // }
 
-    // 发送指令给Bot
-    function SendCommandToBot(command) {
-        ServerSend("ChatRoomChat", {
-            Target: BotMemberNumber,
-            Type: "Whisper",
-            Content: command
-        });
-    }
+    // // 发送指令给Bot
+    // function SendCommandToBot(command) {
+    //     ServerSend("ChatRoomChat", {
+    //         Target: BotMemberNumber,
+    //         Type: "Whisper",
+    //         Content: command
+    //     });
+    // }
 
-    SDK.hookFunction(
-        "ChatRoomSyncMemberJoin",
-        0,
-        (args, next) => {
-            next(args);
+    // SDK.hookFunction(
+    //     "ChatRoomSyncMemberJoin",
+    //     0,
+    //     (args, next) => {
+    //         next(args);
 
-            let data = args[0];
+    //         let data = args[0];
 
-            const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
-            if (OtherRoomCharacters[ChatRoomData.Name] === undefined) {
-                OtherRoomCharacters[ChatRoomData.Name] = [data.SourceMemberNumber];
-            }
-            else {
-                let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
-                if (index < 0) {
-                    OtherRoomCharacters[ChatRoomData.Name].push(data.SourceMemberNumber);
-                }
-            }
+    //         const char = CharacterLoadOnline(data.Character, data.SourceMemberNumber);
+    //         if (OtherRoomCharacters[ChatRoomData.Name] === undefined) {
+    //             OtherRoomCharacters[ChatRoomData.Name] = [data.SourceMemberNumber];
+    //         }
+    //         else {
+    //             let index = OtherRoomCharacters[ChatRoomData.Name].findIndex(chara => chara.MemberNumber === data.SourceMemberNumber);
+    //             if (index < 0) {
+    //                 OtherRoomCharacters[ChatRoomData.Name].push(data.SourceMemberNumber);
+    //             }
+    //         }
 
-        }
-    )
+    //     }
+    // )
 
-    SDK.hookFunction(
-        "ChatRoomSyncMemberLeave",
-        0,
-        (args, next) => {
-            if (!InBotRoom) {
-                next(args);
-                return;
-            }
+    // SDK.hookFunction(
+    //     "ChatRoomSyncMemberLeave",
+    //     0,
+    //     (args, next) => {
+    //         if (!InBotRoom) {
+    //             next(args);
+    //             return;
+    //         }
 
-            let data = args[0];
-            OtherRoomCharacters[SelfRoomName] = OtherRoomCharacters[SelfRoomName].filter(M => M !== data.SourceMemberNumber);
-            ChatRoomCharacter = ChatRoomCharacter.filter(C => C.MemberNumber !== data.SourceMemberNumber);
+    //         let data = args[0];
+    //         OtherRoomCharacters[SelfRoomName] = OtherRoomCharacters[SelfRoomName].filter(M => M !== data.SourceMemberNumber);
+    //         ChatRoomCharacter = ChatRoomCharacter.filter(C => C.MemberNumber !== data.SourceMemberNumber);
 
-            // Bot离开则删除其他房间的数据且切回自己的房间
-            if (data.SourceMemberNumber === BotMemberNumber) {
-                InBotRoom = false;
-                BotMemberNumber = -1;
-                CurrentRoomName = SelfRoomName;
-                const BK = OtherRoomCharacters[SelfRoomName];
-                OtherRoomCharacters = {};
-                OtherRoomCharacters[SelfRoomName] = BK;
-                ChatRoomCharacter = ChatRoomCharacter.filter(C => BK.findIndex(M => M === C.MemberNumber) >= 0);
-                return;
-            }
-            next(args);
-        }
-    )
+    //         // Bot离开则删除其他房间的数据且切回自己的房间
+    //         if (data.SourceMemberNumber === BotMemberNumber) {
+    //             InBotRoom = false;
+    //             BotMemberNumber = -1;
+    //             CurrentRoomName = SelfRoomName;
+    //             const BK = OtherRoomCharacters[SelfRoomName];
+    //             OtherRoomCharacters = {};
+    //             OtherRoomCharacters[SelfRoomName] = BK;
+    //             ChatRoomCharacter = ChatRoomCharacter.filter(C => BK.findIndex(M => M === C.MemberNumber) >= 0);
+    //             return;
+    //         }
+    //         next(args);
+    //     }
+    // )
 
-    // 进入房间同步
-    SDK.hookFunction(
-        "ChatRoomSync",
-        0,
-        (args, next) => {
+    // // 进入房间同步
+    // SDK.hookFunction(
+    //     "ChatRoomSync",
+    //     0,
+    //     (args, next) => {
 
-            let data = args[0];
-            SelfRoomName = data['Name'];
-            CurrentRoomName = SelfRoomName;
+    //         let data = args[0];
+    //         SelfRoomName = data['Name'];
+    //         CurrentRoomName = SelfRoomName;
 
-            // 进入时先删除数据
-            OtherRoomCharacters = {};
-            ChatRoomCharacter = [];
-            InBotRoom = false;
+    //         // 进入时先删除数据
+    //         OtherRoomCharacters = {};
+    //         ChatRoomCharacter = [];
+    //         InBotRoom = false;
 
-            next(args);
-            // 添加到OtherRoomCharacters中
-            for (let C = 0; C < data.Character.length; C++) {
-                MemberJoin({
-                    Character: data.Character[C],
-                    SourceMemberNumber: data.Character[C].MemberNumber,
-                    RoomName: SelfRoomName,
-                });
-            }
+    //         next(args);
+    //         // 添加到OtherRoomCharacters中
+    //         for (let C = 0; C < data.Character.length; C++) {
+    //             MemberJoin({
+    //                 Character: data.Character[C],
+    //                 SourceMemberNumber: data.Character[C].MemberNumber,
+    //                 RoomName: SelfRoomName,
+    //             });
+    //         }
 
-            // 发送WDE-Ping，用于在bot处注册为WDE-Client
-            setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Client-Ping" }), 500);
-        }
-    );
+    //         // 发送WDE-Ping，用于在bot处注册为WDE-Client
+    //         setTimeout(() => ServerSend("ChatRoomChat", { Type: "Hidden", Content: "WDE-Client-Ping" }), 500);
+    //     }
+    // );
 
-    // 修改渲染逻辑
-    SDK.hookFunction(
-        "ChatRoomUpdateDisplay",
-        0,
-        (args, next) => {
-            if (InBotRoom) {
-                let ChatRoomCharacterBK = ChatRoomCharacter;
-                ChatRoomCharacter = ChatRoomCharacterBK.filter(C => {
-                    return OtherRoomCharacters[CurrentRoomName].findIndex(M => M === C.MemberNumber) >= 0;
-                })
-                // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
-                if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
-                next(args);
-                ChatRoomCharacter = ChatRoomCharacterBK;
-                return;
-            }
-            next(args);
-        }
-    );
+    // // 修改渲染逻辑
+    // SDK.hookFunction(
+    //     "ChatRoomUpdateDisplay",
+    //     0,
+    //     (args, next) => {
+    //         if (InBotRoom) {
+    //             let ChatRoomCharacterBK = ChatRoomCharacter;
+    //             ChatRoomCharacter = ChatRoomCharacterBK.filter(C => {
+    //                 return OtherRoomCharacters[CurrentRoomName].findIndex(M => M === C.MemberNumber) >= 0;
+    //             })
+    //             // 有这个if比较重要的原因是在另一个房间只有一个人，且那个人不是自己的时候，BC会直接跳过该角色的渲染
+    //             if (ChatRoomCharacter.findIndex(c => c.MemberNumber == Player.MemberNumber) < 0) ChatRoomCharacter.push(Player);
+    //             next(args);
+    //             ChatRoomCharacter = ChatRoomCharacterBK;
+    //             return;
+    //         }
+    //         next(args);
+    //     }
+    // );
 
-    // 聊天室渲染时绘制按钮
-    SDK.hookFunction(
-        "ChatRoomMenuDraw",
-        0,
-        (args, next) => {
-            next(args);
-            if (InBotRoom) {
-                if (Object.keys(OtherRoomCharacters).length > 1) {
-                    if (CurrentRoomName === SelfRoomName) {
-                        DrawButton(965, 490, 40, 40, "🐺", "#66CCFF");
-                    }
-                    else {
-                        DrawButton(965, 490, 40, 40, "🐺", "#11AA11");
-                    }
-                }
-                else {
-                    DrawButton(965, 490, 40, 40, "🐺", "#888888")
-                }
-                if (SwitchEnable && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE && CurrentRoomName != SelfRoomName) {
-                    DrawButton(965, 450, 40, 40, "✔", "#66CCFF")
-                }
-                else {
-                    DrawButton(965, 450, 40, 40, "✔", "#888888")
-                }
-                if (RefreshEnable) {
-                    DrawButton(965, 530, 40, 40, "♻", "#66CCFF")
-                }
-                else {
-                    DrawButton(965, 530, 40, 40, "♻", "#888888")
-                }
-            }
-        }
-    );
+    // // 聊天室渲染时绘制按钮
+    // SDK.hookFunction(
+    //     "ChatRoomMenuDraw",
+    //     0,
+    //     (args, next) => {
+    //         next(args);
+    //         if (InBotRoom) {
+    //             if (Object.keys(OtherRoomCharacters).length > 1) {
+    //                 if (CurrentRoomName === SelfRoomName) {
+    //                     DrawButton(965, 490, 40, 40, "🐺", "#66CCFF");
+    //                 }
+    //                 else {
+    //                     DrawButton(965, 490, 40, 40, "🐺", "#11AA11");
+    //                 }
+    //             }
+    //             else {
+    //                 DrawButton(965, 490, 40, 40, "🐺", "#888888")
+    //             }
+    //             if (SwitchEnable && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE && CurrentRoomName != SelfRoomName) {
+    //                 DrawButton(965, 450, 40, 40, "✔", "#66CCFF")
+    //             }
+    //             else {
+    //                 DrawButton(965, 450, 40, 40, "✔", "#888888")
+    //             }
+    //             if (RefreshEnable) {
+    //                 DrawButton(965, 530, 40, 40, "♻", "#66CCFF")
+    //             }
+    //             else {
+    //                 DrawButton(965, 530, 40, 40, "♻", "#888888")
+    //             }
+    //         }
+    //     }
+    // );
 
-    // 点击房间内按钮
-    SDK.hookFunction(
-        "ChatRoomClick",
-        0,
-        (args, next) => {
-            if (InBotRoom) {
-                if (MouseIn(970, 490, 40, 40)) {
-                    let keys = Object.keys(OtherRoomCharacters);
-                    let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
-                    CurrentRoomName = keys[roomNameIndex];
-                    if (CurrentRoomName == SelfRoomName) {
-                        ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
-                    }
-                    else {
-                        ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
-                    }
-                    return;
-                }
-                else if (MouseIn(965, 450, 40, 40)) {
-                    if (SwitchEnable && CurrentRoomName != SelfRoomName && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE) {
-                        SwitchEnable = false;
-                        setTimeout(() => {
-                            SwitchEnable = true;
-                        }, SWITCH_ROOM_COOL_DOWN);
-                        ServerSend("ChatRoomLeave", "");
-                        ServerSend("ChatRoomJoin", { Name: CurrentRoomName });
-                    }
-                    return;
-                }
-                else if (MouseIn(965, 530, 40, 40)) {
-                    SendCommandToBot("refresh");
-                    RefreshEnable = false;
-                    setTimeout(() => {
-                        RefreshEnable = true;
-                    }, REFRESH_COOL_DOWN)
-                    return;
-                }
-            }
-            next(args);
-        }
-    );
+    // // 点击房间内按钮
+    // SDK.hookFunction(
+    //     "ChatRoomClick",
+    //     0,
+    //     (args, next) => {
+    //         if (InBotRoom) {
+    //             if (MouseIn(970, 490, 40, 40)) {
+    //                 let keys = Object.keys(OtherRoomCharacters);
+    //                 let roomNameIndex = (keys.findIndex(r => r == CurrentRoomName) + 1) % keys.length;
+    //                 CurrentRoomName = keys[roomNameIndex];
+    //                 if (CurrentRoomName == SelfRoomName) {
+    //                     ChatRoomSendLocal(`<i><b><u style="color: #880000;">当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
+    //                 }
+    //                 else {
+    //                     ChatRoomSendLocal(`<i><b><u>当前房间: ${CurrentRoomName}</i></u></b>`, 5000)
+    //                 }
+    //                 return;
+    //             }
+    //             else if (MouseIn(965, 450, 40, 40)) {
+    //                 if (SwitchEnable && CurrentRoomName != SelfRoomName && OtherRoomCharacters[CurrentRoomName].length < MAX_OTHER_ROOM_SIZE) {
+    //                     SwitchEnable = false;
+    //                     setTimeout(() => {
+    //                         SwitchEnable = true;
+    //                     }, SWITCH_ROOM_COOL_DOWN);
+    //                     ServerSend("ChatRoomLeave", "");
+    //                     ServerSend("ChatRoomJoin", { Name: CurrentRoomName });
+    //                 }
+    //                 return;
+    //             }
+    //             else if (MouseIn(965, 530, 40, 40)) {
+    //                 SendCommandToBot("refresh");
+    //                 RefreshEnable = false;
+    //                 setTimeout(() => {
+    //                     RefreshEnable = true;
+    //                 }, REFRESH_COOL_DOWN)
+    //                 return;
+    //             }
+    //         }
+    //         next(args);
+    //     }
+    // );
 
-    // 通过BOT消息模拟同房间内玩家的消息
-    SDK.hookFunction(
-        "ChatRoomMessage",
-        0,
-        (args, next) => {
-            let data = args[0];
-            console.log(data);
-            if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
-                InBotRoom = true;
-                BotMemberNumber = data.Sender;
-                data.Dictionary.forEach(D => {
-                    switch (D.Type) {
-                        case "MemberJoin":
-                        case "BotSyncCharacters":
-                            MemberJoin(Object.assign({ RoomName: D.RoomName }, D.Data));
-                            break;
-                        case "MemberLeave":
-                            MemberLeave(Object.assign({ RoomName: D.RoomName }, D.Data));
-                            break;
-                        case "ChatRoomSyncItem":
-                            ChatRoomSyncItem(D.Data);
-                            break;
-                        case "ChatRoomMessage":
-                            ChatRoomMessage(D.Data);
-                            break;
-                        case "ChatRoomSyncSingle":
-                            ChatRoomSyncSingle(D.Data);
-                            break;
-                        case "ChatRoomSyncExpression":
-                            ChatRoomSyncExpression(D.Data);
-                            break;
-                        case "ChatRoomSyncPose":
-                            ChatRoomSyncPose(D.Data);
-                            break;
-                        case "ChatRoomSyncArousal":
-                            ChatRoomSyncArousal(D.Data);
-                            break;
-                        case "ClearChatRoomCharacter":
-                            ClearChatRoomCharacter(D.Data);
-                    }
-                })
-                return;
-            }
+    // // 通过BOT消息模拟同房间内玩家的消息
+    // SDK.hookFunction(
+    //     "ChatRoomMessage",
+    //     0,
+    //     (args, next) => {
+    //         let data = args[0];
+    //         console.log(data);
+    //         if (data !== undefined && data.Type == "Whisper" && data.Content == "BotChatRoom" && data.Dictionary !== undefined) {
+    //             InBotRoom = true;
+    //             BotMemberNumber = data.Sender;
+    //             data.Dictionary.forEach(D => {
+    //                 switch (D.Type) {
+    //                     case "MemberJoin":
+    //                     case "BotSyncCharacters":
+    //                         MemberJoin(Object.assign({ RoomName: D.RoomName }, D.Data));
+    //                         break;
+    //                     case "MemberLeave":
+    //                         MemberLeave(Object.assign({ RoomName: D.RoomName }, D.Data));
+    //                         break;
+    //                     case "ChatRoomSyncItem":
+    //                         ChatRoomSyncItem(D.Data);
+    //                         break;
+    //                     case "ChatRoomMessage":
+    //                         ChatRoomMessage(D.Data);
+    //                         break;
+    //                     case "ChatRoomSyncSingle":
+    //                         ChatRoomSyncSingle(D.Data);
+    //                         break;
+    //                     case "ChatRoomSyncExpression":
+    //                         ChatRoomSyncExpression(D.Data);
+    //                         break;
+    //                     case "ChatRoomSyncPose":
+    //                         ChatRoomSyncPose(D.Data);
+    //                         break;
+    //                     case "ChatRoomSyncArousal":
+    //                         ChatRoomSyncArousal(D.Data);
+    //                         break;
+    //                     case "ClearChatRoomCharacter":
+    //                         ClearChatRoomCharacter(D.Data);
+    //                 }
+    //             })
+    //             return;
+    //         }
 
-            next(args);
-        }
-    );
+    //         next(args);
+    //     }
+    // );
 
-    // 解析消息
-    SDK.hookFunction(
-        "ChatRoomMessage",
-        0,
-        (args, next) => {
-            let data = args[0];
-            // 行为 (隐藏消息)
-            if (data !== undefined && data.Content == "WDE-Bot-Element" && data.Type == "Hidden" && data.Dictionary !== undefined) {
-                args[0] = data.Dictionary;
-                data = args[0];
+    // // 解析消息
+    // SDK.hookFunction(
+    //     "ChatRoomMessage",
+    //     0,
+    //     (args, next) => {
+    //         let data = args[0];
+    //         // 行为 (隐藏消息)
+    //         if (data !== undefined && data.Content == "WDE-Bot-Element" && data.Type == "Hidden" && data.Dictionary !== undefined) {
+    //             args[0] = data.Dictionary;
+    //             data = args[0];
 
-                // 加载BOT分享的内嵌播放器链接
-                if (data.Content !== undefined && data.Content == "MusicBox") {
-                    let botContent = data.BotContent;
-                    if (botContent === undefined) {
-                        return;
-                    }
+    //             // 加载BOT分享的内嵌播放器链接
+    //             if (data.Content !== undefined && data.Content == "MusicBox") {
+    //                 let botContent = data.BotContent;
+    //                 if (botContent === undefined) {
+    //                     return;
+    //                 }
 
-                    let url = botContent.MusicUrl;
-                    let sender = botContent.Sender;
-                    let nickname = botContent.Nickname;
-                    // 私聊bot时会自动转播放器，所以不需要接收
-                    if (!botContent.UseId && sender == Player.MemberNumber) return;
-                    if (url === undefined || url == "") return;
-                    ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
-                    return;
-                }
-                return;
-            }
-            next(args);
-        }
-    );
+    //                 let url = botContent.MusicUrl;
+    //                 let sender = botContent.Sender;
+    //                 let nickname = botContent.Nickname;
+    //                 // 私聊bot时会自动转播放器，所以不需要接收
+    //                 if (!botContent.UseId && sender == Player.MemberNumber) return;
+    //                 if (url === undefined || url == "") return;
+    //                 ChatRoomSendLocal(`<i><u><b>${nickname}-${sender}</b></u></i>： ${url}`);
+    //                 return;
+    //             }
+    //             return;
+    //         }
+    //         next(args);
+    //     }
+    // );
 
-    // 过滤由bot转发的模拟消息
-    SDK.hookFunction(
-        "ChatRoomMessage",
-        0,
-        (args, next) => {
-            let data = args[0];
-            if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined && data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
-                BotMemberNumber = data.Sender;
-                return;
-            }
-            next(args);
-        }
-    );
+    // // 过滤由bot转发的模拟消息
+    // SDK.hookFunction(
+    //     "ChatRoomMessage",
+    //     0,
+    //     (args, next) => {
+    //         let data = args[0];
+    //         if (data !== undefined && data.Type === "Emote" && data.Dictionary !== undefined && data.Dictionary.findIndex(item => item.Tag === "BotContent") >= 0) {
+    //             BotMemberNumber = data.Sender;
+    //             return;
+    //         }
+    //         next(args);
+    //     }
+    // );
 
-    // 响应bot进入房间的ping
-    SDK.hookFunction(
-        "ChatRoomMessage",
-        0,
-        (args, next) => {
-            let data = args[0];
-            if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
-                InBotRoom = true;
-                BotMemberNumber = data.Sender;
-                ServerSend("ChatRoomChat", { Type: "Whisper", Content: "WDE-Bot-Pong", Target: data.Sender });
-                return;
-            }
+    // // 响应bot进入房间的ping
+    // SDK.hookFunction(
+    //     "ChatRoomMessage",
+    //     0,
+    //     (args, next) => {
+    //         let data = args[0];
+    //         if (data !== undefined && data.Type === "Hidden" && data.Content === "WDE-Bot-Ping") {
+    //             InBotRoom = true;
+    //             BotMemberNumber = data.Sender;
+    //             ServerSend("ChatRoomChat", { Type: "Whisper", Content: "WDE-Bot-Pong", Target: data.Sender });
+    //             return;
+    //         }
 
-            next(args);
-        }
-    );
+    //         next(args);
+    //     }
+    // );
 
-    console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`);
+    // console.log(`${MOD_NAME} ${MOD_VERSION} Loaded.`);
 })({});
